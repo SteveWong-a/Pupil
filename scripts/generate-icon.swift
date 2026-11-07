@@ -1,5 +1,15 @@
 #!/usr/bin/env swift
+//
+//  generate-icon.swift
+//  Pupil
+//
+//  Renders a tactile macOS Sequoia / Big Sur 3D cushion AppIcon.icns.
+//  Features a dual-layer 3D beveled squircle (obsidian outer frame + porcelain
+//  inner pillow cushion) and a single-weight rounded viewfinder-eye glyph.
+//
+
 import AppKit
+import CoreGraphics
 import Foundation
 
 let fileManager = FileManager.default
@@ -7,112 +17,239 @@ let currentDir = URL(fileURLWithPath: fileManager.currentDirectoryPath)
 let resourcesDir = currentDir.appendingPathComponent("Resources")
 try? fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)
 
-let size = NSSize(width: 1024, height: 1024)
-let img = NSImage(size: size)
-img.lockFocus()
-guard let ctx = NSGraphicsContext.current?.cgContext else {
-    fputs("Failed to get graphics context\n", stderr)
+let size = 1024
+let colorSpace = CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpaceCreateDeviceRGB()
+
+func appleSquirclePath(in rect: CGRect, cornerRadius r: CGFloat) -> CGPath {
+    let path = CGMutablePath()
+    let minX = rect.minX, maxX = rect.maxX
+    let minY = rect.minY, maxY = rect.maxY
+    let k: CGFloat = 0.552284749831
+    let c = r * k
+
+    path.move(to: CGPoint(x: minX + r, y: maxY))
+    path.addLine(to: CGPoint(x: maxX - r, y: maxY))
+    path.addCurve(
+        to: CGPoint(x: maxX, y: maxY - r),
+        control1: CGPoint(x: maxX - r + c, y: maxY),
+        control2: CGPoint(x: maxX, y: maxY - r + c)
+    )
+    path.addLine(to: CGPoint(x: maxX, y: minY + r))
+    path.addCurve(
+        to: CGPoint(x: maxX - r, y: minY),
+        control1: CGPoint(x: maxX, y: minY + r - c),
+        control2: CGPoint(x: maxX - r + c, y: minY)
+    )
+    path.addLine(to: CGPoint(x: minX + r, y: minY))
+    path.addCurve(
+        to: CGPoint(x: minX, y: minY + r),
+        control1: CGPoint(x: minX + r - c, y: minY),
+        control2: CGPoint(x: minX, y: minY + r - c)
+    )
+    path.addLine(to: CGPoint(x: minX, y: maxY - r))
+    path.addCurve(
+        to: CGPoint(x: minX + r, y: maxY),
+        control1: CGPoint(x: minX, y: maxY - r + c),
+        control2: CGPoint(x: minX + r - c, y: maxY)
+    )
+    path.closeSubpath()
+    return path
+}
+
+guard let ctx = CGContext(
+    data: nil,
+    width: size,
+    height: size,
+    bitsPerComponent: 8,
+    bytesPerRow: 0,
+    space: colorSpace,
+    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+) else {
+    fputs("Failed to create CGContext\n", stderr)
     exit(1)
 }
 
-// 1. macOS App Icon Squircle base (Apple continuous corner standard)
-let squircleRect = CGRect(x: 90, y: 90, width: 844, height: 844)
-let squirclePath = CGPath(roundedRect: squircleRect, cornerWidth: 190, cornerHeight: 190, transform: nil)
+ctx.setAllowsAntialiasing(true)
+ctx.setShouldAntialias(true)
+ctx.interpolationQuality = .high
 
-// Subtle drop shadow under squircle
+// 1. Outer 3D Cushion Squircle (Obsidian / Space Black)
+let outerRect = CGRect(x: 100, y: 100, width: 824, height: 824)
+let outerPath = appleSquirclePath(in: outerRect, cornerRadius: 186)
+
 ctx.saveGState()
-ctx.setShadow(offset: CGSize(width: 0, height: -24), blur: 36, color: CGColor(gray: 0, alpha: 0.45))
-ctx.addPath(squirclePath)
-ctx.setFillColor(CGColor(gray: 0.05, alpha: 1.0))
+ctx.setShadow(
+    offset: CGSize(width: 0, height: -14),
+    blur: 28,
+    color: CGColor(colorSpace: colorSpace, components: [0.0, 0.0, 0.0, 0.28])!
+)
+ctx.addPath(outerPath)
+ctx.setFillColor(CGColor(colorSpace: colorSpace, components: [0.10, 0.11, 0.14, 1.0])!)
 ctx.fillPath()
 ctx.restoreGState()
 
-// Base fill: dark obsidian radial gradient
 ctx.saveGState()
-ctx.addPath(squirclePath)
+ctx.addPath(outerPath)
 ctx.clip()
-let colors = [
-    CGColor(red: 0.12, green: 0.12, blue: 0.15, alpha: 1.0),
-    CGColor(red: 0.04, green: 0.04, blue: 0.06, alpha: 1.0)
-] as CFArray
-let colorSpace = CGColorSpaceCreateDeviceRGB()
-if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: [0.0, 1.0]) {
-    ctx.drawRadialGradient(
-        gradient,
-        startCenter: CGPoint(x: 512, y: 560),
-        startRadius: 50,
-        endCenter: CGPoint(x: 512, y: 512),
-        endRadius: 500,
-        options: []
-    )
-}
 
-// Bezel rim stroke
-ctx.addPath(squirclePath)
-ctx.setStrokeColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.14))
-ctx.setLineWidth(8)
-ctx.strokePath()
+let outerGrad = CGGradient(
+    colorsSpace: colorSpace,
+    colors: [
+        CGColor(colorSpace: colorSpace, components: [0.23, 0.25, 0.30, 1.0])!,
+        CGColor(colorSpace: colorSpace, components: [0.09, 0.10, 0.13, 1.0])!
+    ] as CFArray,
+    locations: [0.0, 0.85]
+)!
+ctx.drawLinearGradient(
+    outerGrad,
+    start: CGPoint(x: 512, y: outerRect.maxY),
+    end: CGPoint(x: 512, y: outerRect.minY),
+    options: []
+)
+
+// Outer 3D cushion top highlight bevel
+let outerInv = CGMutablePath()
+outerInv.addRect(outerRect.insetBy(dx: -80, dy: -80))
+outerInv.addPath(outerPath)
+ctx.saveGState()
+ctx.setShadow(
+    offset: CGSize(width: 0, height: -8),
+    blur: 18,
+    color: CGColor(colorSpace: colorSpace, components: [1.0, 1.0, 1.0, 0.30])!
+)
+ctx.addPath(outerInv)
+ctx.fillPath(using: .evenOdd)
+ctx.restoreGState()
 ctx.restoreGState()
 
-// 2. Concentric Biometric Reticle & Guide Rings
-let center = CGPoint(x: 512, y: 512)
+// 2. Inner 3D Cushion Squircle (Porcelain / Silver-Mist)
+let innerRect = outerRect.insetBy(dx: 50, dy: 50)
+let innerPath = appleSquirclePath(in: innerRect, cornerRadius: 150)
 
-// Outer guide ring
-ctx.addEllipse(in: CGRect(x: center.x - 260, y: center.y - 260, width: 520, height: 520))
-ctx.setStrokeColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.18))
-ctx.setLineWidth(4)
-ctx.strokePath()
+ctx.saveGState()
+ctx.setShadow(
+    offset: CGSize(width: 0, height: -6),
+    blur: 16,
+    color: CGColor(colorSpace: colorSpace, components: [0.0, 0.0, 0.0, 0.42])!
+)
+ctx.addPath(innerPath)
+ctx.setFillColor(CGColor(colorSpace: colorSpace, components: [0.95, 0.96, 0.99, 1.0])!)
+ctx.fillPath()
+ctx.restoreGState()
 
-// 4-axis reticle tick marks
-for deg in [0.0, 90.0, 180.0, 270.0] {
-    let rad = deg * .pi / 180.0
-    let x1 = center.x + cos(rad) * 240
-    let y1 = center.y + sin(rad) * 240
-    let x2 = center.x + cos(rad) * 280
-    let y2 = center.y + sin(rad) * 280
-    ctx.move(to: CGPoint(x: x1, y: y1))
-    ctx.addLine(to: CGPoint(x: x2, y: y2))
-    ctx.setStrokeColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.40))
-    ctx.setLineWidth(6)
+ctx.saveGState()
+ctx.addPath(innerPath)
+ctx.clip()
+
+let innerGrad = CGGradient(
+    colorsSpace: colorSpace,
+    colors: [
+        CGColor(colorSpace: colorSpace, components: [0.995, 0.998, 1.0, 1.0])!,
+        CGColor(colorSpace: colorSpace, components: [0.91, 0.93, 0.97, 1.0])!,
+        CGColor(colorSpace: colorSpace, components: [0.83, 0.87, 0.93, 1.0])!
+    ] as CFArray,
+    locations: [0.0, 0.65, 1.0]
+)!
+ctx.drawLinearGradient(
+    innerGrad,
+    start: CGPoint(x: 512, y: innerRect.maxY),
+    end: CGPoint(x: 512, y: innerRect.minY),
+    options: []
+)
+
+// Soft inner pillow shadow along bottom/sides
+let inv = CGMutablePath()
+inv.addRect(innerRect.insetBy(dx: -80, dy: -80))
+inv.addPath(innerPath)
+ctx.saveGState()
+ctx.setShadow(
+    offset: CGSize(width: 0, height: 10),
+    blur: 28,
+    color: CGColor(colorSpace: colorSpace, components: [0.22, 0.28, 0.42, 0.36])!
+)
+ctx.addPath(inv)
+ctx.fillPath(using: .evenOdd)
+ctx.restoreGState()
+
+// Crisp top specular rim on inner cushion
+ctx.saveGState()
+ctx.addPath(innerPath.copy(strokingWithWidth: 10, lineCap: .round, lineJoin: .round, miterLimit: 10))
+ctx.clip()
+let rimGrad = CGGradient(
+    colorsSpace: colorSpace,
+    colors: [
+        CGColor(colorSpace: colorSpace, components: [1.0, 1.0, 1.0, 0.95])!,
+        CGColor(colorSpace: colorSpace, components: [1.0, 1.0, 1.0, 0.15])!
+    ] as CFArray,
+    locations: [0.0, 1.0]
+)!
+ctx.drawLinearGradient(
+    rimGrad,
+    start: CGPoint(x: 512, y: innerRect.maxY),
+    end: CGPoint(x: 512, y: innerRect.minY),
+    options: []
+)
+ctx.restoreGState()
+ctx.restoreGState()
+
+// 3. Center Mark: Viewfinder Corner Brackets + Clean Geometric Eye
+let strokeColor = CGColor(colorSpace: colorSpace, components: [0.13, 0.15, 0.20, 1.0])!
+ctx.saveGState()
+ctx.setStrokeColor(strokeColor)
+ctx.setFillColor(strokeColor)
+ctx.setLineWidth(40)
+ctx.setLineCap(.round)
+ctx.setLineJoin(.round)
+
+let b: CGFloat = 215
+let arm: CGFloat = 68
+let r: CGFloat = 54
+let cx: CGFloat = 512, cy: CGFloat = 512
+
+for (sx, sy) in [(-1.0, 1.0), (1.0, 1.0), (-1.0, -1.0), (1.0, -1.0)] {
+    let p = CGMutablePath()
+    let xCorner = cx + CGFloat(sx) * b
+    let yCorner = cy + CGFloat(sy) * b
+    let xEnd = cx + CGFloat(sx) * (b - arm)
+    let yEnd = cy + CGFloat(sy) * (b - arm)
+    p.move(to: CGPoint(x: xCorner, y: yEnd))
+    p.addArc(tangent1End: CGPoint(x: xCorner, y: yCorner), tangent2End: CGPoint(x: xEnd, y: yCorner), radius: r)
+    p.addLine(to: CGPoint(x: xEnd, y: yCorner))
+    ctx.addPath(p)
     ctx.strokePath()
 }
 
-// Mid optical aperture ring
-ctx.addEllipse(in: CGRect(x: center.x - 170, y: center.y - 170, width: 340, height: 340))
-ctx.setStrokeColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.30))
-ctx.setLineWidth(5)
+let ew: CGFloat = 138
+let eh: CGFloat = 86
+let eyePath = CGMutablePath()
+eyePath.move(to: CGPoint(x: cx - ew, y: cy))
+eyePath.addCurve(
+    to: CGPoint(x: cx + ew, y: cy),
+    control1: CGPoint(x: cx - ew * 0.55, y: cy + eh),
+    control2: CGPoint(x: cx + ew * 0.55, y: cy + eh)
+)
+eyePath.addCurve(
+    to: CGPoint(x: cx - ew, y: cy),
+    control1: CGPoint(x: cx + ew * 0.55, y: cy - eh),
+    control2: CGPoint(x: cx - ew * 0.55, y: cy - eh)
+)
+eyePath.closeSubpath()
+ctx.setLineWidth(36)
+ctx.addPath(eyePath)
 ctx.strokePath()
 
-// Iris aperture glow
-ctx.addEllipse(in: CGRect(x: center.x - 120, y: center.y - 120, width: 240, height: 240))
-ctx.setFillColor(CGColor(red: 0.18, green: 0.18, blue: 0.22, alpha: 1.0))
+ctx.addEllipse(in: CGRect(x: cx - 38, y: cy - 38, width: 76, height: 76))
 ctx.fillPath()
-ctx.setStrokeColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.65))
-ctx.setLineWidth(6)
-ctx.strokePath()
+ctx.restoreGState()
 
-// Razor pupil core
-ctx.addEllipse(in: CGRect(x: center.x - 55, y: center.y - 55, width: 110, height: 110))
-ctx.setFillColor(CGColor(gray: 0.02, alpha: 1.0))
-ctx.fillPath()
-
-// Specular catchlight
-ctx.addEllipse(in: CGRect(x: center.x - 18, y: center.y + 14, width: 28, height: 28))
-ctx.setFillColor(CGColor(gray: 0.95, alpha: 0.95))
-ctx.fillPath()
-
-img.unlockFocus()
-
-guard let tiff = img.tiffRepresentation,
-      let rep = NSBitmapImageRep(data: tiff),
-      let png = rep.representation(using: .png, properties: [:]) else {
-    fputs("Failed to convert image to PNG\n", stderr)
-    exit(1)
-}
+guard let cgImage = ctx.makeImage() else { exit(1) }
+let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+bitmapRep.size = NSSize(width: size, height: size)
+guard let pngData = bitmapRep.representation(using: .png, properties: [:]) else { exit(1) }
 
 let tempPngPath = "/tmp/pupil_icon_1024.png"
 let iconsetPath = "/tmp/Pupil.iconset"
-try png.write(to: URL(fileURLWithPath: tempPngPath))
+try pngData.write(to: URL(fileURLWithPath: tempPngPath))
 
 try? fileManager.removeItem(atPath: iconsetPath)
 try fileManager.createDirectory(atPath: iconsetPath, withIntermediateDirectories: true)
@@ -130,24 +267,22 @@ let scales: [(Int, String)] = [
     (1024, "icon_512x512@2x.png")
 ]
 
-for (dim, filename) in scales {
-    let dest = "\(iconsetPath)/\(filename)"
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-    task.arguments = ["-z", "\(dim)", "\(dim)", tempPngPath, "--out", dest]
-    try task.run()
-    task.waitUntilExit()
+for (px, name) in scales {
+    let outFile = "\(iconsetPath)/\(name)"
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+    proc.arguments = ["-z", "\(px)", "\(px)", tempPngPath, "--out", outFile]
+    proc.standardOutput = Pipe()
+    proc.standardError = Pipe()
+    try proc.run()
+    proc.waitUntilExit()
 }
 
-let icnsDest = resourcesDir.appendingPathComponent("AppIcon.icns").path
-let iconutilTask = Process()
-iconutilTask.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-iconutilTask.arguments = ["-c", "icns", iconsetPath, "-o", icnsDest]
-try iconutilTask.run()
-iconutilTask.waitUntilExit()
+let icnsOutput = resourcesDir.appendingPathComponent("AppIcon.icns").path
+let iconutil = Process()
+iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+iconutil.arguments = ["-c", "icns", iconsetPath, "-o", icnsOutput]
+try iconutil.run()
+iconutil.waitUntilExit()
 
-try? fileManager.removeItem(atPath: tempPngPath)
-try? fileManager.removeItem(atPath: iconsetPath)
-
-print("Generated retina AppIcon.icns -> \(icnsDest)")
-
+print("Generated AppIcon.icns -> \(icnsOutput)")

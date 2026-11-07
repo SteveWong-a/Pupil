@@ -2,7 +2,8 @@
 //  GazeSettingsPage.swift
 //  Pupil
 //
-//  Apple Vision Iris & Head-Pose gaze configuration and live telemetry card.
+//  Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage
+//  and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.
 //
 
 import AVFoundation
@@ -19,11 +20,7 @@ public struct GazeSettingsPage: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {
             SettingsGroup {
-                SettingsRowContent(
-                    title: "Enable Gaze Deterrence",
-                    subtitle: "Uses Apple Vision landmarks to open the watchful eye when someone stares at your screen.",
-                    subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
-                ) {
+                SettingsRowContent(title: "Gaze deterrence") {
                     PupilToggle(isOn: Binding(
                         get: { settings.gazeDetectionEnabled },
                         set: { val in
@@ -34,73 +31,53 @@ public struct GazeSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 cameraDevicePickerRow
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Notch Deterrent Style")
-                SettingsGroup {
-                    SettingsRowContent(
-                        title: "Animation style",
-                        subtitle: settings.notchStyle.subtitle,
-                        subtitleMaxWidth: 165
-                    ) {
-                        HStack(spacing: 8) {
-                            ForEach(NotchDeterrentStyle.allCases) { style in
-                                SettingsOptionTile(
-                                    title: style.title,
-                                    isSelected: settings.notchStyle == style,
-                                    action: {
-                                        settings.notchStyle = style
-                                        coordinator.simulateGazeWarning()
-                                    },
-                                    previewHeight: 42,
-                                    previewWidth: 74
-                                ) {
-                                    deterrentStylePreview(style)
-                                }
-                            }
+                SettingsGroupDivider()
+                SettingsLabeledOptionRow(
+                    title: "Style",
+                    subtitle: "Choose how Pupil responds when someone looks at your screen."
+                ) {
+                    ForEach(NotchDeterrentStyle.allCases) { style in
+                        let isSelected = settings.notchStyle == style
+                        SettingsOptionTile(
+                            title: style.title,
+                            isSelected: isSelected,
+                            action: {
+                                settings.notchStyle = style
+                                coordinator.simulateGazeWarning()
+                            },
+                            previewHeight: SettingsMetrics.optionPreviewHeight,
+                            previewWidth: SettingsMetrics.optionTileWidth
+                        ) {
+                            deterrentStylePreview(style, isSelected: isSelected)
                         }
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Cone Sensitivity & Dwell")
+                SettingsSectionTitle(text: "Sensitivity")
                 SettingsGroup {
-                    SettingsRowContent(
-                        title: "Gaze cone sensitivity",
-                        subtitle: settings.gazeSensitivity.subtitle,
-                        subtitleMaxWidth: 165
-                    ) {
-                        HStack(spacing: 8) {
-                            ForEach(GazeSensitivity.allCases) { mode in
-                                SettingsOptionTile(
-                                    title: mode.title,
-                                    isSelected: settings.gazeSensitivity == mode,
-                                    action: { settings.gazeSensitivity = mode },
-                                    previewHeight: 40,
-                                    previewWidth: 68
-                                ) {
-                                    Image(systemName: mode.iconName)
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(settings.gazeSensitivity == mode ? PupilTheme.accent : SettingsMetrics.textSecondary)
-                                }
-                            }
-                        }
-                    }
+                    SettingsOptionSliderRowContent(
+                        title: "Detection cone",
+                        stepLabels: GazeSensitivity.allCases.map(\.title),
+                        index: $settings.gazeSensitivityIndex,
+                        stopCount: GazeSensitivity.allCases.count
+                    )
                     SettingsGroupDivider()
                     SettingsSteppedSliderRowContent(
-                        title: "Sustained dwell threshold",
+                        title: "Dwell duration",
                         valueLabel: String(format: "%.1f seconds", settings.dwellThresholdSeconds),
                         index: $settings.dwellSliderIndex,
                         stopCount: PupilSettings.dwellStops.count
                     )
                 }
+                SettingsCaption(text: "Higher sensitivity detects wider peripheral angles; dwell duration controls how long a gaze must linger before the notch responds.")
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "On-Device Apple Vision Telemetry")
-                liveTelemetryCard
+                SettingsSectionTitle(text: "Preview")
+                liveCameraPreviewCard
+                SettingsCaption(text: "Preview is only active while shown. All frames are processed in memory and never saved.")
             }
         }
         .onDisappear {
@@ -109,104 +86,125 @@ public struct GazeSettingsPage: View {
     }
 
     private var cameraDevicePickerRow: some View {
-        SettingsRowContent(title: "Camera input") {
+        SettingsRowContent(title: "Camera") {
             SettingsMenuPickerPill(label: selectedCameraName) {
-                Button("Built-in FaceTime Camera (Default)") {
+                Button("Default (\(defaultCameraName))") {
                     settings.preferredCameraID = nil
                 }
-                Divider()
-                ForEach(coordinator.cameraManager.availableCameras) { cam in
-                    Button(cam.name) {
-                        settings.preferredCameraID = cam.id
+                if !coordinator.cameraManager.availableCameras.isEmpty {
+                    Divider()
+                    ForEach(coordinator.cameraManager.availableCameras) { cam in
+                        Button(cam.name) {
+                            settings.preferredCameraID = cam.id
+                        }
                     }
                 }
             }
         }
+    }
+
+    private var defaultCameraName: String {
+        coordinator.cameraManager.availableCameras.first?.name ?? "Built-in Camera"
     }
 
     private var selectedCameraName: String {
         guard let id = settings.preferredCameraID,
               let match = coordinator.cameraManager.availableCameras.first(where: { $0.id == id }) else {
-            return coordinator.cameraManager.availableCameras.first?.name ?? "Built-in Camera"
+            return "Default (\(defaultCameraName))"
         }
         return match.name
     }
 
     @ViewBuilder
-    private func deterrentStylePreview(_ style: NotchDeterrentStyle) -> some View {
+    private func deterrentStylePreview(_ style: NotchDeterrentStyle, isSelected: Bool) -> some View {
+        let tint: Color = isSelected
+            ? SettingsMetrics.textPrimary.opacity(0.75)
+            : SettingsMetrics.textSecondary.opacity(0.65)
         switch style {
         case .minimalPill:
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(Color.white.opacity(0.85))
-                    .frame(width: 5, height: 5)
-                Capsule()
-                    .fill(Color.black)
-                    .frame(width: 24, height: 10)
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(Color(white: 0.22), lineWidth: 0.8)
-                    )
-            }
+            Capsule()
+                .fill(tint)
+                .frame(width: 50, height: 14)
         case .silent:
             Image(systemName: "eye.slash")
-                .font(.system(size: 14))
-                .foregroundStyle(SettingsMetrics.textSecondary)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(tint)
         }
     }
 
-    private var liveTelemetryCard: some View {
-        SettingsGroup {
-            HStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.black.opacity(0.65))
-                        .frame(width: 88, height: 64)
-                    PupilEyeVectorView(
-                        isOpen: coordinator.cameraManager.isRunning || coordinator.isGazeWarningActive,
-                        lookOffset: coordinator.eyeLookOffset,
-                        accentColor: Color.white.opacity(0.85),
-                        size: 36
-                    )
-                }
-
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack {
-                        Text(coordinator.cameraManager.isRunning ? "Vision Pipeline Active (10 FPS)" : "Camera Idle (Privacy Preserved)")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(SettingsMetrics.textPrimary)
-                        Spacer()
-                        Text(String(format: "Score: %.0f%%", coordinator.latestGazeScore * 100))
-                            .font(.system(size: 11, design: .monospaced))
+    private var liveCameraPreviewCard: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                if coordinator.isCameraPreviewRequested {
+                    CameraPreviewView(session: coordinator.cameraManager.captureSessionReference)
+                        .transition(.opacity)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "video.slash")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundStyle(SettingsMetrics.textTertiary)
+                        Text("Preview is off")
+                            .font(.system(size: 12))
                             .foregroundStyle(SettingsMetrics.textSecondary)
                     }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 196)
+            .background(Color.black.opacity(0.18))
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: SettingsMetrics.rowRadius,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: SettingsMetrics.rowRadius
+                )
+            )
 
-                    ProgressView(value: coordinator.gazeDwellProgress)
-                        .tint(Color.white.opacity(0.85))
+            Rectangle()
+                .fill(SettingsMetrics.rowBorder)
+                .frame(height: SettingsMetrics.rowBorderWidth)
 
-                    Text("Faces in ROI: \(coordinator.activeFaceCount) · Zero frames written to disk")
-                        .font(.system(size: 10))
-                        .foregroundStyle(SettingsMetrics.textTertiary)
+            HStack {
+                if coordinator.isCameraPreviewRequested {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(coordinator.activeFaceCount > 0 ? PupilTheme.armedGreen : SettingsMetrics.textTertiary)
+                            .frame(width: 6, height: 6)
+                        Text(coordinator.activeFaceCount > 0 ? "Face detected" : "No face detected")
+                            .font(.system(size: 12))
+                            .foregroundStyle(SettingsMetrics.textSecondary)
+                    }
+                }
+                Spacer()
+                PillActionButton(
+                    title: coordinator.isCameraPreviewRequested ? "Hide preview" : "Show preview"
+                ) {
+                    togglePreview()
                 }
             }
             .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
-            .padding(.vertical, 12)
+            .frame(height: SettingsMetrics.rowHeight)
+        }
+        .background(SettingsMetrics.rowColor)
+        .overlay(
+            RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius)
+                .strokeBorder(SettingsMetrics.rowBorder, lineWidth: SettingsMetrics.rowBorderWidth)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius))
+    }
 
-            SettingsGroupDivider()
-
-            SettingsActionRowContent(
-                title: "Live Camera Calibration",
-                subtitle: "Test iris and head-pose tracking right now without arming.",
-                buttonTitle: coordinator.isCameraPreviewRequested ? "Stop Calibration" : "Start Calibration"
-            ) {
-                if coordinator.isCameraPreviewRequested {
-                    coordinator.setCameraPreviewRequested(false)
-                } else {
-                    Task {
-                        let granted = await coordinator.cameraManager.requestCameraAccess()
-                        if granted {
-                            coordinator.setCameraPreviewRequested(true)
-                        }
+    private func togglePreview() {
+        if coordinator.isCameraPreviewRequested {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                coordinator.setCameraPreviewRequested(false)
+            }
+        } else {
+            Task {
+                let granted = await coordinator.cameraManager.requestCameraAccess()
+                if granted {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        coordinator.setCameraPreviewRequested(true)
                     }
                 }
             }

@@ -2,102 +2,63 @@
 //  AboutSettingsPage.swift
 //  Pupil
 //
-//  About & Privacy page modeled after Glance's AboutSettingsPage.
+//  About page modeled directly after Glance's AboutSettingsPage.
 //
 
+import AppKit
 import SwiftUI
 
 public struct AboutSettingsPage: View {
     public init() {}
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {
+        VStack(spacing: 16) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 80, height: 80)
+
+            VStack(spacing: 4) {
+                Text(appName)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(SettingsMetrics.textPrimary)
+
+                Text("Version \(versionString)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(SettingsMetrics.textSecondary)
+            }
+
             SettingsGroup {
-                HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.black.opacity(0.85))
-                            .frame(width: 54, height: 54)
-                        PupilEyeVectorView(isOpen: true, accentColor: PupilTheme.accent, size: 28)
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 8) {
-                            Text("Pupil")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(SettingsMetrics.textPrimary)
-                            Text("v1.0.0")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundStyle(SettingsMetrics.textSecondary)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(SettingsMetrics.pickerPillFill))
-                        }
-                        Text("Native macOS menu bar & notch security sentinel for solo study sessions.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(SettingsMetrics.textSecondary)
-                    }
-                    Spacer()
+                SettingsRowContent(title: "Processing") {
+                    Text("On-Device Apple Vision")
+                        .font(.system(size: 13))
+                        .foregroundStyle(SettingsMetrics.textSecondary)
                 }
-                .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
-                .padding(.vertical, 14)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Four Response Levels")
-                SettingsGroup {
-                    levelRow(
-                        number: "1",
-                        title: "Armed Deterrence",
-                        detail: "Menu bar closed eye glyph; hardware power & lid sensors armed."
-                    )
-                    SettingsGroupDivider()
-                    levelRow(
-                        number: "2",
-                        title: "Gaze Warning",
-                        detail: "Sustained gaze inside camera ROI widens the MacBook notch with a minimal dark pill status indicator."
-                    )
-                    SettingsGroupDivider()
-                    levelRow(
-                        number: "3",
-                        title: "Tamper Countdown",
-                        detail: "AC charger unplug or screen lock initiates an immediate grace countdown."
-                    )
-                    SettingsGroupDivider()
-                    levelRow(
-                        number: "4",
-                        title: "PIN-Latched Siren",
-                        detail: "Lid closure or expired countdown latches the AVAudioEngine siren until PIN/Touch ID disarm."
-                    )
+                SettingsGroupDivider()
+                SettingsRowContent(title: "Passcode storage") {
+                    Text("macOS Keychain (SHA-256)")
+                        .font(.system(size: 13))
+                        .foregroundStyle(SettingsMetrics.textSecondary)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(title: "Camera privacy") {
+                    Text("Zero frames saved to disk")
+                        .font(.system(size: 13))
+                        .foregroundStyle(SettingsMetrics.textSecondary)
                 }
             }
-
-            VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "On-Device Privacy & Security")
-                SettingsGroup {
-                    SettingsRowContent(
-                        title: "100% On-Device Vision Pipeline",
-                        subtitle: "Camera frames are processed in memory via Apple Vision and immediately discarded. Zero images or videos are ever saved to disk or sent over the network."
-                    ) {
-                        Image(systemName: "hand.raised.fill")
-                            .foregroundStyle(PupilTheme.armedGreen)
-                    }
-                    SettingsGroupDivider()
-                    SettingsRowContent(
-                        title: "Keychain & Biometric Protection",
-                        subtitle: "Disarm PINs are salted and SHA-256 hashed in the macOS Keychain alongside LocalAuthentication Touch ID."
-                    ) {
-                        Image(systemName: "key.fill")
-                            .foregroundStyle(PupilTheme.accent)
-                    }
-                }
-            }
+            .padding(.top, 8)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 20)
     }
 
-    private func levelRow(number: String, title: String, detail: String) -> some View {
-        SettingsRowContent(title: "\(number). \(title)", subtitle: detail) {
-            EmptyView()
-        }
+    private var appName: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Pupil"
+    }
+
+    private var versionString: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(short) (\(build))"
     }
 }

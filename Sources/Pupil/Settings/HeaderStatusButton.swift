@@ -3,7 +3,7 @@
 //  Pupil
 //
 //  The Settings window header's trailing pill, modeled directly after Glance's SessionLockButton.
-//  Shows live security state with animated SF Symbol transitions and one-click Arm / Disarm popover.
+//  Shows live lock state with animated SF Symbol transitions and one-click Arm / Unlock popover.
 //
 
 import SwiftUI
@@ -19,14 +19,14 @@ public struct HeaderStatusButton: View {
         self.coordinator = coordinator
     }
 
+    private var isLocked: Bool {
+        coordinator.state != .disarmed
+    }
+
     public var body: some View {
         Button(action: handleTap) {
-            HStack(spacing: 7) {
-                Circle()
-                    .fill(statusDotColor)
-                    .frame(width: 7, height: 7)
-
-                Image(systemName: coordinator.menuBarSymbolName)
+            HStack(spacing: 6) {
+                Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace))
 
@@ -40,7 +40,7 @@ public struct HeaderStatusButton: View {
             .background(Capsule().fill(SettingsMetrics.rowColor))
             .overlay(
                 Capsule()
-                    .strokeBorder(borderColor, lineWidth: SettingsMetrics.rowBorderWidth)
+                    .strokeBorder(SettingsMetrics.rowBorder, lineWidth: SettingsMetrics.rowBorderWidth)
             )
             .contentShape(Capsule())
         }
@@ -51,37 +51,18 @@ public struct HeaderStatusButton: View {
         }
     }
 
-    private var statusDotColor: Color {
-        switch coordinator.state {
-        case .disarmed: return Color.secondary.opacity(0.5)
-        case .arming: return PupilTheme.warningAmber
-        case .armed: return coordinator.isGazeWarningActive ? Color.white.opacity(0.9) : PupilTheme.armedGreen
-        case .tamperPending: return PupilTheme.warningAmber
-        case .alarm: return PupilTheme.alarmRed
-        }
-    }
-
-    private var borderColor: Color {
-        switch coordinator.state {
-        case .alarm: return PupilTheme.alarmRed.opacity(0.65)
-        case .tamperPending: return PupilTheme.warningAmber.opacity(0.55)
-        case .armed: return PupilTheme.armedGreen.opacity(0.35)
-        default: return SettingsMetrics.rowBorder
-        }
-    }
-
     private var statusLabel: String {
         switch coordinator.state {
         case .disarmed:
-            return "Disarmed — Click to Arm"
+            return "Arm"
         case .arming:
-            return "Arming (\(coordinator.countdownSecondsRemaining)s)…"
+            return "Arming (\(coordinator.countdownSecondsRemaining)s)"
         case .armed:
-            return coordinator.isGazeWarningActive ? "Gaze Warning" : "Armed & Monitoring"
+            return "Armed"
         case .tamperPending:
             return "Tamper (\(coordinator.countdownSecondsRemaining)s)"
         case .alarm:
-            return "ALARM LATCHED"
+            return "Alarm"
         }
     }
 
@@ -100,29 +81,25 @@ public struct HeaderStatusButton: View {
 
     private var disarmPopoverContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(PupilTheme.accent)
-                Text("Disarm Pupil")
-                    .font(.system(size: 13, weight: .semibold))
-            }
+            Text("Unlock Pupil")
+                .font(.system(size: 13, weight: .semibold))
 
-            SecureField("Enter 4–8 digit PIN", text: $pinInput)
+            SecureField("Enter PIN", text: $pinInput)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(size: 13, design: .monospaced))
-                .frame(width: 190)
+                .font(.system(size: 13))
+                .frame(width: 180)
                 .onSubmit {
                     submitDisarmPin()
                 }
 
             if pinError {
-                Text("Incorrect PIN. Default is 1234.")
+                Text("Incorrect PIN")
                     .font(.system(size: 11))
                     .foregroundStyle(PupilTheme.alarmRed)
             }
 
             HStack(spacing: 8) {
-                Button("Disarm") {
+                Button("Unlock") {
                     submitDisarmPin()
                 }
                 .buttonStyle(.borderedProminent)

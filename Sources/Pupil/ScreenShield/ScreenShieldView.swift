@@ -3,9 +3,8 @@
 //  Pupil
 //
 //  SwiftUI content rendered in ScreenShieldWindow:
-//  Full-screen native AppKit visual effect blur with an obsidian privacy vignette.
-//  When anything is clicked, opens a small native macOS UI window in the center of the screen
-//  requesting the password / PIN or Touch ID to unblur.
+//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.
+//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.
 //
 
 import AppKit
@@ -26,49 +25,21 @@ public struct ScreenShieldView: View {
     private var isAlarm: Bool { coordinator.state == .alarm }
     private var isTamper: Bool { coordinator.state == .tamperPending }
 
-    private var accentColor: Color {
-        if isAlarm { return PupilTheme.alarmRed }
-        if isTamper { return PupilTheme.warningAmber }
-        return Color.white.opacity(0.85)
-    }
-
-    private var cardBorderGradient: LinearGradient {
-        if isAlarm {
-            return LinearGradient(
-                colors: [PupilTheme.alarmRed.opacity(0.8), PupilTheme.alarmRed.opacity(0.25)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        if isTamper {
-            return LinearGradient(
-                colors: [PupilTheme.warningAmber.opacity(0.8), PupilTheme.warningAmber.opacity(0.25)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        return LinearGradient(
-            colors: [Color.white.opacity(0.22), Color.white.opacity(0.08)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
     public var body: some View {
         ZStack {
-            // 1. Native behind-window frosted glass blur (always locked and active)
+            // 1. Native behind-window frosted glass blur (always active while armed)
             VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)
                 .ignoresSafeArea()
 
-            // 2. Obsidian privacy vignette darkening background content
+            // 2. Subtle privacy vignette
             RadialGradient(
                 colors: [
-                    Color.black.opacity(0.35),
-                    Color.black.opacity(0.70)
+                    Color.black.opacity(0.32),
+                    Color.black.opacity(0.68)
                 ],
                 center: .center,
-                startRadius: 200,
-                endRadius: 900
+                startRadius: 220,
+                endRadius: 920
             )
             .ignoresSafeArea()
 
@@ -84,13 +55,13 @@ public struct ScreenShieldView: View {
                     }
                 }
 
-            // 4. Centered small macOS UI password prompt window (presented only on interaction)
+            // 4. Centered macOS authentication dialog (presented only on interaction)
             if isPromptPresented {
                 macOSPasswordWindow
                     .transition(
                         .asymmetric(
-                            insertion: .scale(scale: 0.94).combined(with: .opacity),
-                            removal: .scale(scale: 0.94).combined(with: .opacity)
+                            insertion: .scale(scale: 0.95).combined(with: .opacity),
+                            removal: .scale(scale: 0.95).combined(with: .opacity)
                         )
                     )
                     .offset(x: shakeOffset)
@@ -119,241 +90,193 @@ public struct ScreenShieldView: View {
         }
     }
 
-    // MARK: - Small macOS UI Window
+    // MARK: - Small macOS Authentication Window
 
     private var macOSPasswordWindow: some View {
-        VStack(spacing: 0) {
-            // Top Bar with subtle Close Button
-            HStack {
-                Spacer()
-                if !isAlarm && !isTamper {
-                    Button(action: closePrompt) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Color.white.opacity(0.60))
-                            .frame(width: 20, height: 20)
-                            .background(Circle().fill(Color.white.opacity(0.12)))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Close (Esc)")
+        VStack(spacing: 16) {
+            // App icon / lock badge
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+                    .frame(width: 52, height: 52)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+
+                if isAlarm {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(PupilTheme.alarmRed)
+                } else if isTamper {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(PupilTheme.warningAmber)
+                } else {
+                    PupilEyeVectorView(
+                        isOpen: true,
+                        lookOffset: coordinator.eyeLookOffset,
+                        accentColor: Color.white.opacity(0.92),
+                        size: 28
+                    )
                 }
             }
-            .padding(.top, 14)
-            .padding(.horizontal, 16)
+            .padding(.top, 4)
 
-            // Center Content
-            VStack(spacing: 14) {
-                // Biometric aperture eye or security glyph
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.14),
-                                    Color.white.opacity(0.04)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 48, height: 48)
-                        .overlay(
-                            Circle().strokeBorder(cardBorderGradient, lineWidth: 1)
-                        )
+            // Title & subtitle
+            VStack(spacing: 4) {
+                Text(windowTitle)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.white)
 
-                    if isAlarm {
-                        Image(systemName: "exclamationmark.shield.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(PupilTheme.alarmRed)
-                    } else if isTamper {
-                        Image(systemName: "bell.badge.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(PupilTheme.warningAmber)
-                    } else {
-                        PupilEyeVectorView(
-                            isOpen: true,
-                            lookOffset: coordinator.eyeLookOffset,
-                            accentColor: accentColor,
-                            size: 30
-                        )
-                    }
-                }
+                Text(windowSubtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.white.opacity(0.62))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 240)
+            }
 
-                // Window Headline & Subtitle
-                VStack(spacing: 4) {
-                    Text(windowTitle)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(isAlarm ? PupilTheme.alarmRed : (isTamper ? PupilTheme.warningAmber : Color.white))
-
-                    Text(windowSubtitle)
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(Color.white.opacity(0.65))
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 250)
-                }
-
-                // Password / PIN Input
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "key.fill")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.40))
-                            .padding(.leading, 10)
-
-                        SecureField("Password or PIN", text: $pinInput)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.white)
-                            .focused($isPinFocused)
-                            .onSubmit {
-                                submitPin()
-                            }
-
-                        if coordinator.settings.allowTouchIDDisarm {
-                            Button {
-                                Task {
-                                    _ = await coordinator.disarmWithTouchID()
-                                }
-                            } label: {
-                                Image(systemName: "touchid")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.white.opacity(0.85))
-                                    .frame(width: 24, height: 24)
-                                    .background(Circle().fill(Color.white.opacity(0.12)))
-                            }
-                            .buttonStyle(.plain)
-                            .help("Authenticate with Touch ID")
-                            .padding(.trailing, 6)
+            // Password / PIN field
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    SecureField("Enter PIN", text: $pinInput)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.white)
+                        .focused($isPinFocused)
+                        .onSubmit {
+                            submitPin()
                         }
-                    }
-                    .frame(height: 34)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.black.opacity(0.50))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(
-                                hasError ? PupilTheme.alarmRed : (isPinFocused ? Color.white.opacity(0.40) : Color.white.opacity(0.18)),
-                                lineWidth: hasError ? 1.5 : 1
-                            )
-                    )
 
-                    if hasError {
-                        HStack(spacing: 4) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 10))
-                            Text("Incorrect PIN. Please try again.")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundStyle(PupilTheme.alarmRed)
-                        .transition(.opacity)
-                    }
-                }
-                .padding(.horizontal, 4)
-
-                // Dialog Action Buttons: Cancel and Unlock
-                HStack(spacing: 12) {
-                    if !isAlarm && !isTamper {
-                        Button(action: closePrompt) {
-                            Text("Cancel")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.85))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 30)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .fill(Color.white.opacity(0.12))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 1)
-                                )
+                    if coordinator.settings.allowTouchIDDisarm {
+                        Button {
+                            Task {
+                                _ = await coordinator.disarmWithTouchID()
+                            }
+                        } label: {
+                            Image(systemName: "touchid")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.80))
+                                .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
-                        .keyboardShortcut(.cancelAction)
+                        .help("Unlock with Touch ID")
                     }
 
                     Button(action: submitPin) {
-                        Text(isAlarm ? "Disarm Siren" : "Unlock")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 30)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(isAlarm ? PupilTheme.alarmRed : Color.white)
-                            )
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(pinInput.isEmpty ? Color.white.opacity(0.28) : Color.white.opacity(0.90))
                     }
                     .buttonStyle(.plain)
-                    .keyboardShortcut(.defaultAction)
+                    .disabled(pinInput.isEmpty)
                 }
-                .padding(.top, 4)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 22)
-        }
-        .frame(width: 320)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(white: 0.12).opacity(0.96))
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.black.opacity(0.42))
+                )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.24),
-                                    Color.white.opacity(0.08)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
+                            hasError ? PupilTheme.alarmRed : (isPinFocused ? Color.white.opacity(0.36) : Color.white.opacity(0.14)),
                             lineWidth: 1
                         )
                 )
-                .shadow(color: Color.black.opacity(0.65), radius: 36, x: 0, y: 16)
+
+                if hasError {
+                    Text("Incorrect PIN")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(PupilTheme.alarmRed)
+                        .transition(.opacity)
+                }
+            }
+
+            // Actions
+            HStack(spacing: 10) {
+                if !isAlarm && !isTamper {
+                    Button(action: closePrompt) {
+                        Text("Cancel")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .fill(Color.white.opacity(0.10))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.cancelAction)
+                }
+
+                Button(action: submitPin) {
+                    Text("Unlock")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(Color.white)
+                        )
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(22)
+        .frame(width: 288)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(white: 0.11).opacity(0.95))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.55), radius: 32, x: 0, y: 14)
         )
-        // Consume clicks inside the dialog so they don't fall through to the background
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .onTapGesture { }
     }
 
-    // MARK: - Status Headlines
+    // MARK: - Status Copy
 
     private var windowTitle: String {
         switch coordinator.state {
         case .disarmed:
-            return "Screen Shield Preview"
+            return "Pupil Preview"
         case .arming:
-            return "Arming System (\(coordinator.countdownSecondsRemaining)s)"
+            return "Arming (\(coordinator.countdownSecondsRemaining)s)"
         case .armed:
-            return "Pupil Locked"
+            return "Pupil is locked"
         case .tamperPending:
-            return "Tamper Detected (\(coordinator.countdownSecondsRemaining)s)"
+            return "Tamper detected — \(coordinator.countdownSecondsRemaining)s"
         case .alarm:
-            return "ALARM TRIGGERED"
+            return "Alarm active"
         }
     }
 
     private var windowSubtitle: String {
         switch coordinator.state {
         case .disarmed:
-            return "Click Unlock or press Esc to dismiss preview."
+            return "Press Esc or click Unlock to close preview."
         case .arming:
-            return "Exit delay in progress. Enter PIN to abort."
+            return "Enter your PIN to cancel arming."
         case .armed:
-            return "Enter your PIN or password to unlock this Mac."
+            return "Enter your PIN or use Touch ID to unlock."
         case .tamperPending:
-            return "Enter PIN immediately to abort siren."
+            return "Enter your PIN to cancel the alarm."
         case .alarm:
-            return "Enter Keychain PIN to silence siren and disarm."
+            return "Enter your PIN to silence the alarm."
         }
     }
 
     // MARK: - Actions
 
     private func openPrompt() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.84)) {
             isPromptPresented = true
             hasError = false
             pinInput = ""
@@ -365,7 +288,7 @@ public struct ScreenShieldView: View {
 
     private func closePrompt() {
         guard !isAlarm && !isTamper else { return }
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
             isPromptPresented = false
             hasError = false
             pinInput = ""
@@ -378,7 +301,7 @@ public struct ScreenShieldView: View {
         pinInput = ""
         if success {
             hasError = false
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
                 isPromptPresented = false
             }
         } else {
@@ -388,23 +311,15 @@ public struct ScreenShieldView: View {
     }
 
     private func triggerErrorShake() {
-        withAnimation(.default) {
-            shakeOffset = -10
+        withAnimation(.default) { shakeOffset = -9 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+            withAnimation(.default) { shakeOffset = 9 }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            withAnimation(.default) {
-                shakeOffset = 10
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            withAnimation(.default) { shakeOffset = -5 }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
-            withAnimation(.default) {
-                shakeOffset = -6
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
-            withAnimation(.default) {
-                shakeOffset = 0
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) {
+            withAnimation(.default) { shakeOffset = 0 }
         }
     }
 }

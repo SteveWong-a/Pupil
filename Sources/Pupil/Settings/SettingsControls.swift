@@ -238,6 +238,151 @@ public struct SettingsSteppedSliderRowContent: View {
     }
 }
 
+/// Discrete slider with stop labels directly beneath the track (matching Glance's SettingsOptionSliderRowContent).
+public struct SettingsOptionSliderRowContent: View {
+    public let title: String
+    public let stepLabels: [String]
+    @Binding public var index: Double
+    public let stopCount: Int
+
+    public init(title: String, stepLabels: [String], index: Binding<Double>, stopCount: Int) {
+        self.title = title
+        self.stepLabels = stepLabels
+        self._index = index
+        self.stopCount = stopCount
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(SettingsMetrics.rowFont)
+                .foregroundStyle(SettingsMetrics.textPrimary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Slider(value: $index, in: 0...Double(max(stopCount - 1, 1)), step: 1)
+                    .controlSize(.regular)
+                    .tint(PupilTheme.accent)
+                HStack {
+                    ForEach(Array(stepLabels.enumerated()), id: \.offset) { position, label in
+                        Text(label)
+                            .font(.system(size: 12))
+                            .foregroundStyle(SettingsMetrics.textTertiary)
+                            .frame(maxWidth: .infinity, alignment: alignment(at: position))
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
+        .padding(.vertical, SettingsMetrics.sliderRowVerticalPadding)
+    }
+
+    private func alignment(at position: Int) -> Alignment {
+        if position == 0 { return .leading }
+        if position == stepLabels.count - 1 { return .trailing }
+        return .center
+    }
+}
+
+public struct SettingsPrimaryButton: View {
+    public let title: String
+    public var isEnabled: Bool = true
+    public var compact: Bool = false
+    public let action: () -> Void
+
+    public init(title: String, isEnabled: Bool = true, compact: Bool = false, action: @escaping () -> Void) {
+        self.title = title
+        self.isEnabled = isEnabled
+        self.compact = compact
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, compact ? 14 : 16)
+                .padding(.vertical, compact ? 6 : 7)
+                .background(PupilTheme.accent)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.4)
+    }
+}
+
+public struct PillActionButton: View {
+    public let title: String
+    public let action: () -> Void
+
+    public init(title: String, action: @escaping () -> Void) {
+        self.title = title
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(SettingsMetrics.textPrimary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(SettingsMetrics.neutralButtonFill)
+                .overlay(
+                    Capsule().strokeBorder(SettingsMetrics.rowBorder, lineWidth: SettingsMetrics.rowBorderWidth)
+                )
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Press-and-hold destructive confirmation button (matching Glance's HoldToConfirmButton).
+public struct HoldToConfirmButton: View {
+    public let title: String
+    public var holdDuration: TimeInterval = 2.0
+    public let action: () -> Void
+
+    @State private var fillProgress: CGFloat = 0
+
+    public init(title: String, holdDuration: TimeInterval = 2.0, action: @escaping () -> Void) {
+        self.title = title
+        self.holdDuration = holdDuration
+        self.action = action
+    }
+
+    public var body: some View {
+        Text(title)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(SettingsMetrics.textPrimary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        SettingsMetrics.neutralButtonFill
+                        Rectangle()
+                            .fill(SettingsMetrics.destructiveFill)
+                            .frame(width: proxy.size.width * fillProgress)
+                    }
+                }
+            }
+            .overlay(
+                Capsule().strokeBorder(SettingsMetrics.rowBorder, lineWidth: SettingsMetrics.rowBorderWidth)
+            )
+            .clipShape(Capsule())
+            .contentShape(Capsule())
+            .onLongPressGesture(minimumDuration: holdDuration) {
+                action()
+            } onPressingChanged: { isPressing in
+                withAnimation(.linear(duration: isPressing ? holdDuration : 0.18)) {
+                    fillProgress = isPressing ? 1 : 0
+                }
+            }
+    }
+}
+
 public struct SettingsActionRowContent: View {
     public let title: String
     public var subtitle: String?
@@ -290,9 +435,10 @@ public struct SettingsSectionTitle: View {
     public var body: some View {
         Text(text)
             .font(SettingsMetrics.sectionTitleFont)
-            .foregroundStyle(SettingsMetrics.textSecondary)
-            .padding(.horizontal, SettingsMetrics.sectionTitleHorizontalInset)
-            .padding(.top, 4)
+            .foregroundStyle(SettingsMetrics.textTertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, SettingsMetrics.sectionTitleHorizontalInset)
+            .padding(.top, SettingsMetrics.sectionTitleVerticalPadding)
     }
 }
 
@@ -305,26 +451,71 @@ public struct SettingsCaption: View {
 
     public var body: some View {
         Text(text)
-            .font(.system(size: 11))
-            .foregroundStyle(SettingsMetrics.textTertiary)
+            .font(.system(size: 12))
+            .foregroundStyle(SettingsMetrics.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, SettingsMetrics.sectionTitleHorizontalInset)
     }
 }
 
+/// Top-aligned label + wrapped subtitle on the leading edge and fixed-size option tiles on the trailing edge.
+public struct SettingsLabeledOptionRow<Content: View>: View {
+    public let title: String
+    public var subtitle: String?
+    @ViewBuilder public var content: () -> Content
+
+    public init(
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.content = content
+    }
+
+    public var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(SettingsMetrics.rowFont)
+                    .foregroundStyle(SettingsMetrics.textPrimary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundStyle(SettingsMetrics.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: SettingsMetrics.rowSubtitleMaxWidth, alignment: .leading)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.trailing, 12)
+
+            HStack(alignment: .top, spacing: SettingsMetrics.optionItemSpacing) {
+                content()
+            }
+            .layoutPriority(1)
+        }
+        .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
+        .padding(.vertical, SettingsMetrics.optionCardVerticalPadding)
+    }
+}
+
+/// Selectable preview tile with Glance's double-ring border + outset selection ring.
 public struct SettingsOptionTile<Preview: View>: View {
     public let title: String
     public let isSelected: Bool
     public let action: () -> Void
-    public var previewHeight: CGFloat = SettingsMetrics.triggerOptionPreviewSize.height
-    public var previewWidth: CGFloat = SettingsMetrics.triggerOptionPreviewSize.width
+    public var previewHeight: CGFloat = SettingsMetrics.optionPreviewHeight
+    public var previewWidth: CGFloat? = nil
     @ViewBuilder public var preview: () -> Preview
 
     public init(
         title: String,
         isSelected: Bool,
         action: @escaping () -> Void,
-        previewHeight: CGFloat = SettingsMetrics.triggerOptionPreviewSize.height,
-        previewWidth: CGFloat = SettingsMetrics.triggerOptionPreviewSize.width,
+        previewHeight: CGFloat = SettingsMetrics.optionPreviewHeight,
+        previewWidth: CGFloat? = nil,
         @ViewBuilder preview: @escaping () -> Preview
     ) {
         self.title = title
@@ -335,31 +526,72 @@ public struct SettingsOptionTile<Preview: View>: View {
         self.preview = preview
     }
 
+    public static func previewTint(isSelected: Bool) -> Color {
+        isSelected
+            ? SettingsMetrics.textPrimary.opacity(0.75)
+            : SettingsMetrics.textSecondary.opacity(0.65)
+    }
+
     public var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: SettingsMetrics.optionPreviewCornerRadius, style: .continuous)
-                        .fill(SettingsMetrics.optionPreviewFill)
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: SettingsMetrics.optionPreviewCornerRadius, style: .continuous)
-                            .fill(PupilTheme.accent.opacity(0.14))
+            VStack(spacing: 8) {
+                preview()
+                    .frame(width: previewWidth)
+                    .frame(maxWidth: previewWidth == nil ? .infinity : nil)
+                    .frame(height: previewHeight)
+                    .background {
+                        SettingsMetrics.optionPreviewFill
+                        if isSelected {
+                            PupilTheme.accent.opacity(SettingsMetrics.optionPreviewSelectedTintOpacity)
+                        }
                     }
-                    preview()
-                }
-                .frame(width: previewWidth, height: previewHeight)
-                .overlay(
-                    RoundedRectangle(cornerRadius: SettingsMetrics.optionPreviewCornerRadius, style: .continuous)
-                        .strokeBorder(
-                            isSelected ? PupilTheme.accent : SettingsMetrics.rowBorder,
-                            lineWidth: isSelected ? SettingsMetrics.optionSelectionStrokeWidth : 1
+                    .clipShape(RoundedRectangle(cornerRadius: SettingsMetrics.optionPreviewCornerRadius, style: .continuous))
+                    .compositingGroup()
+                    .shadow(
+                        color: SettingsMetrics.optionPreviewShadowColor,
+                        radius: SettingsMetrics.optionPreviewShadowRadius,
+                        x: 0,
+                        y: 0
+                    )
+                    .overlay(
+                        RoundedRectangle(
+                            cornerRadius: SettingsMetrics.optionPreviewCornerRadius + SettingsMetrics.optionPreviewOuterStrokeWidth,
+                            style: .continuous
                         )
-                )
+                        .strokeBorder(
+                            SettingsMetrics.optionPreviewOuterStroke,
+                            lineWidth: SettingsMetrics.optionPreviewOuterStrokeWidth
+                        )
+                        .padding(-SettingsMetrics.optionPreviewOuterStrokeWidth)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SettingsMetrics.optionPreviewCornerRadius, style: .continuous)
+                            .strokeBorder(
+                                SettingsMetrics.rowBorder,
+                                lineWidth: SettingsMetrics.optionPreviewBorderWidth
+                            )
+                    )
+                    .overlay {
+                        if isSelected {
+                            let expansion = SettingsMetrics.optionSelectionOutset + SettingsMetrics.optionSelectionStrokeWidth
+                            RoundedRectangle(
+                                cornerRadius: SettingsMetrics.optionPreviewCornerRadius + expansion,
+                                style: .continuous
+                            )
+                            .strokeBorder(
+                                PupilTheme.accent,
+                                lineWidth: SettingsMetrics.optionSelectionStrokeWidth
+                            )
+                            .padding(-expansion)
+                        }
+                    }
 
                 Text(title)
                     .font(SettingsMetrics.optionLabelFont)
                     .foregroundStyle(isSelected ? SettingsMetrics.textPrimary : SettingsMetrics.textSecondary)
             }
+            .frame(maxWidth: previewWidth == nil ? .infinity : nil)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -400,6 +632,18 @@ public struct VisualEffectView: NSViewRepresentable {
 }
 
 public final class AppearanceAdaptiveVisualEffectView: NSVisualEffectView {
+    private static let lightSaturationFilter: CIFilter? = {
+        let f = CIFilter(name: "CIColorControls")
+        f?.setValue(1.75, forKey: kCIInputSaturationKey)
+        return f
+    }()
+
+    private static let darkSaturationFilter: CIFilter? = {
+        let f = CIFilter(name: "CIColorControls")
+        f?.setValue(1.20, forKey: kCIInputSaturationKey)
+        return f
+    }()
+
     public override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         applyFilterForCurrentAppearance()
@@ -407,10 +651,8 @@ public final class AppearanceAdaptiveVisualEffectView: NSVisualEffectView {
 
     public func applyFilterForCurrentAppearance() {
         let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        if let filter = CIFilter(name: "CIColorControls") {
-            filter.setValue(isDark ? 1.2 : 1.75, forKey: "inputSaturation")
-            layer?.filters = [filter]
-        }
+        let filter = isDark ? Self.darkSaturationFilter : Self.lightSaturationFilter
+        layer?.filters = filter.map { [$0] }
     }
 }
 

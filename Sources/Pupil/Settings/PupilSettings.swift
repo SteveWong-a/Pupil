@@ -19,16 +19,16 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
     public var title: String {
         switch self {
         case .relaxed: return "Relaxed"
-        case .balanced: return "Balanced"
+        case .balanced: return "Default"
         case .strict: return "Strict"
         }
     }
 
     public var subtitle: String {
         switch self {
-        case .relaxed: return "Direct frontal stare only (score ≥ 0.75)"
-        case .balanced: return "Standard library/cafe cone (score ≥ 0.65)"
-        case .strict: return "Wide peripheral snoop detection (score ≥ 0.52)"
+        case .relaxed: return "Direct frontal gaze only."
+        case .balanced: return "Balanced detection cone."
+        case .strict: return "Wide peripheral detection cone."
         }
     }
 
@@ -223,6 +223,15 @@ public final class PupilSettings {
         set {
             let idx = max(0, min(Self.dwellStops.count - 1, Int(newValue.rounded())))
             dwellThresholdSeconds = Self.dwellStops[idx]
+        }
+    }
+
+    public var gazeSensitivityIndex: Double {
+        get { Double(GazeSensitivity.allCases.firstIndex(of: gazeSensitivity) ?? 1) }
+        set {
+            let cases = GazeSensitivity.allCases
+            let idx = max(0, min(cases.count - 1, Int(newValue.rounded())))
+            gazeSensitivity = cases[idx]
         }
     }
 

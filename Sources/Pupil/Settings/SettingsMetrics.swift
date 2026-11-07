@@ -2,7 +2,7 @@
 //  SettingsMetrics.swift
 //  Pupil
 //
-//  Native macOS design tokens for the Settings window, modeled directly after Glance's SettingsMetrics.
+//  Native macOS design tokens for the Settings window, matching Glance's SettingsMetrics.
 //
 
 import AppKit
@@ -89,25 +89,53 @@ public enum SettingsMetrics {
     public static let rowFont = Font.system(size: 13, weight: .regular)
     public static let rowSpacing: CGFloat = 12
     public static let rowHorizontalInset: CGFloat = 14
-    public static let rowSubtitleMaxWidth: CGFloat = 250
+    public static let rowSubtitleMaxWidth: CGFloat = 240
     public static let sliderRowVerticalPadding: CGFloat = 12
+
+    // MARK: - Buttons & Pills
 
     public static let pickerPillFill = adaptiveColor(
         dark: NSColor(white: 1, alpha: 0.06),
         light: NSColor(white: 0, alpha: 0.08)
     )
+    public static let neutralButtonFill = adaptiveColor(
+        dark: NSColor(white: 1, alpha: 0.08),
+        light: NSColor(white: 0, alpha: 0.06)
+    )
+    public static let destructiveFill = Color(red: 0xFF / 255, green: 0x45 / 255, blue: 0x3A / 255).opacity(0.85)
+
+    // MARK: - Option Tiles (Glance Double-Ring + Outset Spec)
+
+    public static let optionItemSpacing: CGFloat = 10
+    public static let optionCardVerticalPadding: CGFloat = 12
+    public static let optionPreviewHeight: CGFloat = 46
+    public static let optionTileWidth: CGFloat = 76
     public static let optionPreviewFill = adaptiveColor(
         dark: NSColor(white: 1, alpha: 0.05),
         light: NSColor(white: 0, alpha: 0.05)
     )
+    public static let optionPreviewSelectedTintOpacity: Double = 0.12
     public static let optionPreviewCornerRadius: CGFloat = 13
+    public static let optionPreviewBorderWidth: CGFloat = 1
+    public static let optionPreviewOuterStrokeWidth: CGFloat = 1
+    public static let optionPreviewOuterStroke = adaptiveColor(
+        dark: NSColor(white: 0, alpha: 0.35),
+        light: NSColor(white: 0, alpha: 0)
+    )
+    public static let optionPreviewShadowColor = adaptiveColor(
+        dark: NSColor(white: 0, alpha: 0.25),
+        light: NSColor(white: 0, alpha: 0.05)
+    )
+    public static let optionPreviewShadowRadius: CGFloat = 4
     public static let triggerOptionPreviewSize = CGSize(width: 72, height: 44)
+    public static let styleOptionPreviewSize = CGSize(width: 96, height: 52)
     public static let optionLabelFont = Font.system(size: 11, weight: .medium)
     public static let optionSelectionOutset: CGFloat = 2.5
-    public static let optionSelectionStrokeWidth: CGFloat = 2.5
+    public static let optionSelectionStrokeWidth: CGFloat = 2.0
 
-    public static let sectionTitleFont = Font.system(size: 13, weight: .medium)
+    public static let sectionTitleFont = Font.system(size: 12, weight: .medium)
     public static let sectionTitleHorizontalInset: CGFloat = 10
+    public static let sectionTitleVerticalPadding: CGFloat = 4
     public static let contentHorizontalPadding: CGFloat = 16
     public static let stateTransitionAnimation = Animation.easeInOut(duration: 0.25)
 

@@ -2,7 +2,7 @@
 //  SensorsSettingsPage.swift
 //  Pupil
 //
-//  Hardware tamper sensors (IOKit AC power, AppleClamshellState lid close, macOS lock monitor).
+//  Hardware tamper triggers, sleep assertion behavior, and live sensor status.
 //
 
 import SwiftUI
@@ -18,78 +18,77 @@ public struct SensorsSettingsPage: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {
             SettingsGroup {
-                SettingsRowContent(
-                    title: "Hardware Tamper Triggers",
-                    subtitle: "Select which physical events escalate while armed.",
-                    subtitleMaxWidth: 165
+                SettingsLabeledOptionRow(
+                    title: "Triggers",
+                    subtitle: "Choose which physical events trigger the tamper countdown while armed."
                 ) {
-                    HStack(spacing: 8) {
-                        ForEach(HardwareTrigger.allCases) { trigger in
-                            let isSelected = settings.hardwareTriggers.contains(trigger)
-                            SettingsOptionTile(
-                                title: trigger.title,
-                                isSelected: isSelected,
-                                action: { toggleTrigger(trigger, isSelected: isSelected) },
-                                previewHeight: 42,
-                                previewWidth: 74
-                            ) {
-                                Image(systemName: trigger.iconName)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(isSelected ? PupilTheme.accent : SettingsMetrics.textSecondary)
-                            }
+                    ForEach(HardwareTrigger.allCases) { trigger in
+                        let isSelected = settings.hardwareTriggers.contains(trigger)
+                        let tint: Color = isSelected
+                            ? SettingsMetrics.textPrimary.opacity(0.75)
+                            : SettingsMetrics.textSecondary.opacity(0.65)
+                        SettingsOptionTile(
+                            title: trigger.title,
+                            isSelected: isSelected,
+                            action: { toggleTrigger(trigger, isSelected: isSelected) },
+                            previewHeight: SettingsMetrics.optionPreviewHeight,
+                            previewWidth: SettingsMetrics.optionTileWidth
+                        ) {
+                            Image(systemName: trigger.iconName)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(tint)
                         }
                     }
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
-                    title: "Hold system sleep during lid-close alarm",
-                    subtitle: "Acquires an IOKit power assertion so the siren keeps sounding before sleep.",
-                    subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    title: "Prevent sleep during alarm",
+                    info: "Keeps your Mac awake while the lid-close alarm is sounding."
                 ) {
                     PupilToggle(isOn: $settings.holdSleepOnLidClose)
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Live IOKit Hardware State")
+                SettingsSectionTitle(text: "Hardware Status")
                 SettingsGroup {
                     sensorReadoutRow(
-                        title: "Power Source (IOPSCopyPowerSourcesInfo)",
+                        title: "Power source",
                         icon: coordinator.powerMonitor.isOnACPower ? "bolt.fill" : "battery.75percent",
                         tint: coordinator.powerMonitor.isOnACPower ? PupilTheme.armedGreen : PupilTheme.warningAmber,
-                        value: coordinator.powerMonitor.isOnACPower ? "AC Charger Connected" : "Running on Battery"
+                        value: coordinator.powerMonitor.isOnACPower ? "Power Adapter" : "Battery"
                     )
                     SettingsGroupDivider()
                     sensorReadoutRow(
-                        title: "Clamshell Lid (AppleClamshellState)",
+                        title: "Display lid",
                         icon: "laptopcomputer",
                         tint: PupilTheme.armedGreen,
                         value: coordinator.powerMonitor.isLidClosed ? "Closed" : "Open"
                     )
                     SettingsGroupDivider()
                     sensorReadoutRow(
-                        title: "Sleep Prevention Assertion (IOPMAssertion)",
-                        icon: coordinator.powerMonitor.isSleepAssertionActive ? "lock.shield.fill" : "moon.zzz",
+                        title: "Sleep assertion",
+                        icon: coordinator.powerMonitor.isSleepAssertionActive ? "bolt.shield.fill" : "moon.zzz",
                         tint: coordinator.powerMonitor.isSleepAssertionActive ? PupilTheme.accent : SettingsMetrics.textSecondary,
-                        value: coordinator.powerMonitor.isSleepAssertionActive ? "Active (Holding Awake)" : "Standby"
+                        value: coordinator.powerMonitor.isSleepAssertionActive ? "Active" : "Idle"
                     )
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Phone Alert Relay")
+                SettingsSectionTitle(text: "Remote Relay")
                 SettingsGroup {
                     SettingsRowContent(
-                        title: "Enable WebSocket Phone Relay",
-                        subtitle: "Pushes tamper countdowns and alarm events to your paired phone."
+                        title: "WebSocket notifications",
+                        info: "Forwards tamper countdowns and alarm events to a local or remote WebSocket endpoint."
                     ) {
                         PupilToggle(isOn: $settings.relayEnabled)
                     }
                     SettingsGroupDivider()
-                    SettingsRowContent(title: "Relay endpoint") {
+                    SettingsRowContent(title: "Endpoint") {
                         TextField("ws://127.0.0.1:8787", text: $settings.relayURL)
                             .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.system(size: 12))
                             .frame(width: 200)
                             .disabled(!settings.relayEnabled)
                     }
@@ -114,7 +113,7 @@ public struct SensorsSettingsPage: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(tint)
                 Text(value)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 13))
                     .foregroundStyle(SettingsMetrics.textSecondary)
             }
         }

@@ -2,7 +2,7 @@
 //  GeneralSettingsPage.swift
 //  Pupil
 //
-//  General settings page modeled after Glance's GeneralSettingsPage.
+//  General settings page modeled directly after Glance's GeneralSettingsPage.
 //
 
 import AppKit
@@ -12,6 +12,7 @@ public struct GeneralSettingsPage: View {
     @Bindable var coordinator: SecurityCoordinator
     @Bindable private var settings = PupilSettings.shared
 
+    @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var screens: [NSScreen] = NSScreen.screens
     @State private var showPinEditor = false
     @State private var newPinInput = ""
@@ -24,49 +25,57 @@ public struct GeneralSettingsPage: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {
             SettingsGroup {
-                SettingsRowContent(
-                    title: "Show in menu bar",
-                    info: "Displays the Pupil eye status icon in your macOS menu bar."
-                ) {
+                SettingsRowContent(title: "Launch at login") {
+                    PupilToggle(isOn: Binding(
+                        get: { launchAtLogin },
+                        set: { newValue in
+                            try? LaunchAtLogin.setEnabled(newValue)
+                            launchAtLogin = LaunchAtLogin.isEnabled
+                        }
+                    ))
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(title: "Show in menu bar") {
                     PupilToggle(isOn: $settings.showsInMenuBar)
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
                     title: "Blur screen while armed",
-                    subtitle: "Renders a frosted glass blur across all displays so private apps cannot be snooped."
+                    info: "Covers all displays with a frosted blur while armed. Click anywhere to reveal the PIN prompt."
                 ) {
                     PupilToggle(isOn: $settings.blurBackgroundWhenArmed)
                 }
                 SettingsGroupDivider()
-                SettingsRowContent(
-                    title: "Allow Touch ID to disarm",
-                    subtitle: "Use the Touch ID sensor alongside your Keychain PIN."
-                ) {
+                SettingsRowContent(title: "Unlock with Touch ID") {
                     PupilToggle(isOn: $settings.allowTouchIDDisarm)
                 }
                 SettingsGroupDivider()
-                SettingsRowContent(title: "Trackpad haptic feedback") {
-                    PupilToggle(isOn: $settings.hapticFeedbackEnabled)
-                }
-                SettingsGroupDivider()
                 displayPickerRow
+            }
+            .onAppear {
+                launchAtLogin = LaunchAtLogin.isEnabled
+                screens = NSScreen.screens
             }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
                 screens = NSScreen.screens
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Timing & Delays")
+                SettingsSectionTitle(text: "Behaviour")
                 SettingsGroup {
+                    SettingsRowContent(title: "Haptic feedback") {
+                        PupilToggle(isOn: $settings.hapticFeedbackEnabled)
+                    }
+                    SettingsGroupDivider()
                     SettingsSteppedSliderRowContent(
-                        title: "Arming exit delay",
+                        title: "Arming delay",
                         valueLabel: "\(settings.exitDelaySeconds) seconds",
                         index: $settings.exitDelaySliderIndex,
                         stopCount: PupilSettings.exitDelayStops.count
                     )
                     SettingsGroupDivider()
                     SettingsSteppedSliderRowContent(
-                        title: "Tamper grace countdown",
+                        title: "Grace period",
                         valueLabel: "\(settings.gracePeriodSeconds) seconds",
                         index: $settings.gracePeriodSliderIndex,
                         stopCount: PupilSettings.gracePeriodStops.count
@@ -75,60 +84,53 @@ public struct GeneralSettingsPage: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Authentication & Keychain")
+                SettingsSectionTitle(text: "Passcode")
                 SettingsGroup {
-                    SettingsActionRowContent(
-                        title: "Disarm PIN",
-                        subtitle: "Stored as a salted SHA-256 digest in macOS Keychain.",
-                        buttonTitle: "Change PIN…"
-                    ) {
-                        newPinInput = ""
-                        pinStatusMessage = nil
-                        showPinEditor.toggle()
+                    SettingsRowContent(title: "Disarm PIN") {
+                        PillActionButton(title: "Change…") {
+                            newPinInput = ""
+                            pinStatusMessage = nil
+                            showPinEditor.toggle()
+                        }
+                        .popover(isPresented: $showPinEditor, arrowEdge: .bottom) {
+                            pinEditorPopover
+                        }
                     }
-                    .popover(isPresented: $showPinEditor, arrowEdge: .bottom) {
-                        pinEditorPopover
+                    SettingsGroupDivider()
+                    SettingsRowContent(title: "Preview") {
+                        HStack(spacing: 8) {
+                            PillActionButton(title: "Notch") {
+                                coordinator.simulateGazeWarning()
+                            }
+                            PillActionButton(title: "Screen Shield") {
+                                coordinator.previewScreenShield()
+                            }
+                        }
                     }
                 }
                 if let pinStatusMessage {
                     SettingsCaption(text: pinStatusMessage)
                 }
             }
-
-            VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Quick Verification")
-                SettingsGroup {
-                    SettingsActionRowContent(
-                        title: "Preview Notch Gaze Deterrent",
-                        subtitle: "Expands the MacBook notch with the tracking Pupil eye for 4.5 seconds.",
-                        buttonTitle: "Preview in Notch"
-                    ) {
-                        coordinator.simulateGazeWarning()
-                    }
-                    SettingsGroupDivider()
-                    SettingsActionRowContent(
-                        title: "Preview Screen Shield Blur",
-                        subtitle: "Fades in the full-screen frosted glass privacy blur across all displays for 4.5 seconds.",
-                        buttonTitle: "Preview Blur"
-                    ) {
-                        coordinator.previewScreenShield()
-                    }
-                }
-            }
         }
     }
 
     private var displayPickerRow: some View {
-        SettingsRowContent(title: "Display overlay on") {
+        SettingsRowContent(
+            title: "Display on",
+            info: "Choose which screen shows the Pupil overlay."
+        ) {
             SettingsMenuPickerPill(label: selectedDisplayLabel) {
-                Button("Automatic (Notch Preferred)") {
+                Button("Automatic") {
                     settings.preferredDisplayID = nil
                 }
-                Divider()
-                ForEach(screens, id: \.stableDisplayID) { screen in
-                    if let id = screen.stableDisplayID {
-                        Button(screen.localizedName) {
-                            settings.preferredDisplayID = id
+                if !screens.isEmpty {
+                    Divider()
+                    ForEach(screens, id: \.stableDisplayID) { screen in
+                        if let id = screen.stableDisplayID {
+                            Button(screen.localizedName) {
+                                settings.preferredDisplayID = id
+                            }
                         }
                     }
                 }
@@ -146,15 +148,15 @@ public struct GeneralSettingsPage: View {
 
     private var pinEditorPopover: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Set New Disarm PIN")
+            Text("Change PIN")
                 .font(.system(size: 13, weight: .semibold))
-            Text("Enter 4 to 8 numeric digits.")
+            Text("Enter a 4 to 8 digit passcode.")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
 
-            SecureField("New PIN (4–8 digits)", text: $newPinInput)
+            SecureField("New PIN", text: $newPinInput)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.system(size: 13))
                 .frame(width: 180)
 
             HStack {
@@ -165,10 +167,10 @@ public struct GeneralSettingsPage: View {
 
                 Spacer()
 
-                Button("Save PIN") {
+                Button("Save") {
                     do {
                         try coordinator.updatePin(newPin: newPinInput)
-                        pinStatusMessage = "PIN updated in macOS Keychain."
+                        pinStatusMessage = "PIN updated."
                         showPinEditor = false
                     } catch {
                         pinStatusMessage = error.localizedDescription
