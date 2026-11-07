@@ -27,6 +27,16 @@ public final class ScreenShieldController {
                 self?.reconfigureForCurrentScreens()
             }
         }
+
+        NotificationCenter.default.addObserver(
+            forName: .screenShieldFocusPrimary,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.activatePrimary()
+            }
+        }
     }
 
     public func syncWithCoordinator() {
@@ -47,8 +57,8 @@ public final class ScreenShieldController {
         // If screens count changed or no windows yet, build windows
         if shieldWindows.count != NSScreen.screens.count {
             destroyWindows()
-            for screen in NSScreen.screens {
-                let window = makeShieldWindow(for: screen, coordinator: coordinator)
+            for (index, screen) in NSScreen.screens.enumerated() {
+                let window = makeShieldWindow(for: screen, isPrimary: index == 0, coordinator: coordinator)
                 shieldWindows.append(window)
             }
         } else {
@@ -59,7 +69,10 @@ public final class ScreenShieldController {
             }
         }
 
-        guard !isVisible else { return }
+        guard !isVisible else {
+            activatePrimary()
+            return
+        }
         isVisible = true
 
         for window in shieldWindows {
@@ -76,10 +89,8 @@ public final class ScreenShieldController {
             }
         }
 
-        // Make the primary screen's shield key for immediate keyboard PIN input
-        if let primary = shieldWindows.first {
-            primary.makeKey()
-        }
+        // Make the primary screen's shield key and activate the application for immediate keyboard PIN input
+        activatePrimary()
     }
 
     private func hideShield() {
@@ -103,22 +114,27 @@ public final class ScreenShieldController {
     private func reconfigureForCurrentScreens() {
         guard isVisible, let coordinator else { return }
         destroyWindows()
-        for screen in NSScreen.screens {
-            let window = makeShieldWindow(for: screen, coordinator: coordinator)
+        for (index, screen) in NSScreen.screens.enumerated() {
+            let window = makeShieldWindow(for: screen, isPrimary: index == 0, coordinator: coordinator)
             window.alphaValue = 1.0
             window.orderFrontRegardless()
             shieldWindows.append(window)
         }
+        activatePrimary()
+    }
+
+    private func activatePrimary() {
+        NSApp.activate(ignoringOtherApps: true)
         if let primary = shieldWindows.first {
-            primary.makeKey()
+            primary.makeKeyAndOrderFront(nil)
         }
     }
 
-    private func makeShieldWindow(for screen: NSScreen, coordinator: SecurityCoordinator) -> ScreenShieldWindow {
+    private func makeShieldWindow(for screen: NSScreen, isPrimary: Bool, coordinator: SecurityCoordinator) -> ScreenShieldWindow {
         let window = ScreenShieldWindow(contentRect: screen.frame)
         window.setFrame(screen.frame, display: true)
 
-        let rootView = ScreenShieldView(coordinator: coordinator)
+        let rootView = ScreenShieldView(coordinator: coordinator, isPrimary: isPrimary)
         window.contentView = NSHostingView(rootView: rootView)
         return window
     }

@@ -3,7 +3,7 @@
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
   "total_indexed_files": 36,
-  "total_source_lines": 6816,
+  "total_source_lines": 6976,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -136,7 +136,9 @@
       "pillPath"
     ],
     "Sources/Pupil/NotchOverlay/NotchWindow.swift": [
-      "NotchWindow"
+      "NotchWindow",
+      "NotchHostingView",
+      "hitTest"
     ],
     "Sources/Pupil/NotchOverlay/NotchOverlayView.swift": [
       "PupilEyeVectorView",
@@ -157,6 +159,7 @@
     ],
     "Sources/Pupil/ScreenShield/ScreenShieldView.swift": [
       "ScreenShieldView",
+      "handleDismissOrCancel",
       "openPrompt",
       "closePrompt",
       "submitPin",
@@ -168,6 +171,7 @@
       "showShield",
       "hideShield",
       "reconfigureForCurrentScreens",
+      "activatePrimary",
       "makeShieldWindow",
       "destroyWindows"
     ],
@@ -406,8 +410,8 @@
       "chunk_id": "pupil::Sources::Pupil::PupilApp.swift",
       "file_path": "Sources/Pupil/PupilApp.swift",
       "module_category": "App Lifecycle & Menu Bar",
-      "line_count": 283,
-      "content_hash": "4c8c21dad1394d77",
+      "line_count": 288,
+      "content_hash": "147d13dd971da595",
       "symbols": [
         "PupilApp",
         "AppDelegate",
@@ -458,8 +462,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 513,
-      "content_hash": "95d70441cf310215",
+      "line_count": 519,
+      "content_hash": "a46a7b5fec2f6c82",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -926,13 +930,15 @@
       "chunk_id": "pupil::Sources::Pupil::NotchOverlay::NotchWindow.swift",
       "file_path": "Sources/Pupil/NotchOverlay/NotchWindow.swift",
       "module_category": "Shielding-Level Non-activating NSPanel",
-      "line_count": 38,
-      "content_hash": "915a9ac96359c556",
+      "line_count": 77,
+      "content_hash": "88531bc10cbb1aa9",
       "symbols": [
-        "NotchWindow"
+        "NotchWindow",
+        "NotchHostingView",
+        "hitTest"
       ],
       "summary": "NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.",
-      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchWindow.swift\nModule: Shielding-Level Non-activating NSPanel\nSummary: NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.\nKey Symbols: NotchWindow\nContent Sample:\n//\n//  NotchWindow.swift\n//  Pupil\n//\n//  Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1,\n//  joining all spaces and full-screen apps without stealing focus.\n//\n\nimport AppKit\nimport CoreGraphics\n\npublic final class NotchWindow: NSPanel {\n    private static let overlayWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel()) + 1\n    )\n\n    public var acceptsKey = false\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless, .nonactivatingPanel],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.overlayWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = true\n    }\n\n    public override var canBecomeKey: Bool { acceptsKey }\n    public override var canBecomeMain: Bool { false }\n}",
+      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchWindow.swift\nModule: Shielding-Level Non-activating NSPanel\nSummary: NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.\nKey Symbols: NotchWindow, NotchHostingView, hitTest\nContent Sample:\n//\n//  NotchWindow.swift\n//  Pupil\n//\n//  Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1,\n//  joining all spaces and full-screen apps without stealing focus.\n//\n\nimport AppKit\nimport CoreGraphics\nimport SwiftUI\n\npublic final class NotchWindow: NSPanel {\n    private static let overlayWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel()) + 1\n    )\n\n    public var acceptsKey = false\n    public var activeNotchSize: CGSize = .zero\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless, .nonactivatingPanel],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.overlayWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = true\n    }\n\n    public override var canBecomeKey: Bool { acceptsKey }\n    public override var canBecomeMain: Bool { false }\n}",
       "keywords": [
         "sources",
         "pupil",
@@ -965,8 +971,8 @@
       "chunk_id": "pupil::Sources::Pupil::NotchOverlay::NotchOverlayView.swift",
       "file_path": "Sources/Pupil/NotchOverlay/NotchOverlayView.swift",
       "module_category": "Biometric Eye & Interactive Notch UI",
-      "line_count": 407,
-      "content_hash": "0905d478a3dd34ca",
+      "line_count": 411,
+      "content_hash": "78206f452bd9fc35",
       "symbols": [
         "PupilEyeVectorView",
         "NotchOverlayView",
@@ -1007,8 +1013,8 @@
       "chunk_id": "pupil::Sources::Pupil::NotchOverlay::NotchOverlayController.swift",
       "file_path": "Sources/Pupil/NotchOverlay/NotchOverlayController.swift",
       "module_category": "Notch Window Lifecycle Controller",
-      "line_count": 72,
-      "content_hash": "d56d9390ab41fc04",
+      "line_count": 73,
+      "content_hash": "9740ef2721aaac2e",
       "symbols": [
         "NotchOverlayController",
         "syncWithCoordinator",
@@ -1046,15 +1052,15 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldWindow.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift",
       "module_category": "Shielding-Level Privacy Blur NSPanel",
-      "line_count": 59,
-      "content_hash": "e9a12b37f9da5d69",
+      "line_count": 74,
+      "content_hash": "2068d8626bd9a945",
       "symbols": [
         "ScreenShieldWindow",
         "sendEvent",
         "keyDown"
       ],
       "summary": "ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = false\n        hidesOnDeactivate = false\n    }\n\n    public override var canBecomeKey: Bool { true }",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n    public static let screenShieldDeleteKey = Notification.Name(\"PupilScreenShieldDeleteKey\")\n    public static let screenShieldSubmitPrompt = Notification.Name(\"PupilScreenShieldSubmitPrompt\")\n    public static let screenShieldDigitTyped = Notification.Name(\"PupilScreenShieldDigitTyped\")\n    public static let screenShieldFocusPrimary = Notification.Name(\"PupilScreenShieldFocusPrimary\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = false",
       "keywords": [
         "sources",
         "pupil",
@@ -1087,17 +1093,18 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 325,
-      "content_hash": "2c9e0e68e1ba5949",
+      "line_count": 380,
+      "content_hash": "b57345ef2f30d7cc",
       "symbols": [
         "ScreenShieldView",
+        "handleDismissOrCancel",
         "openPrompt",
         "closePrompt",
         "submitPin",
         "triggerErrorShake"
       ],
       "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @State private var isPromptPresented: Bool = false\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n\n    public var body: some View {\n        ZStack {\n            // 1. Native behind-window frosted glass blur (always active while armed)\n            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)\n                .ignoresSafeArea()\n\n            // 2. Subtle privacy vignette\n            RadialGradient(\n                colors: [\n                    Color.black.opacity(0.32),\n                    Color.black.opacity(0.68)\n                ],\n                center: .center,",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n\n    public var body: some View {\n        ZStack {\n            // 1. Native behind-window frosted glass blur (always active while armed)\n            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)\n                .ignoresSafeArea()\n\n            // 2. Subtle privacy vignette\n            RadialGradient(\n                colors: [\n                    Color.black.opacity(0.32),\n                    Color.black.opacity(0.68)",
       "keywords": [
         "sources",
         "pupil",
@@ -1130,19 +1137,20 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldController.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldController.swift",
       "module_category": "Multi-Display Screen Shield Manager",
-      "line_count": 133,
-      "content_hash": "e8dbbd04e564c7f0",
+      "line_count": 149,
+      "content_hash": "db0b95239daa87a8",
       "symbols": [
         "ScreenShieldController",
         "syncWithCoordinator",
         "showShield",
         "hideShield",
         "reconfigureForCurrentScreens",
+        "activatePrimary",
         "makeShieldWindow",
         "destroyWindows"
       ],
       "summary": "ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldController.swift\nModule: Multi-Display Screen Shield Manager\nSummary: ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\nKey Symbols: ScreenShieldController, syncWithCoordinator, showShield, hideShield, reconfigureForCurrentScreens, makeShieldWindow, destroyWindows\nContent Sample:\n//\n//  ScreenShieldController.swift\n//  Pupil\n//\n//  Manages the multi-display full-screen privacy blur shield windows.\n//  Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class ScreenShieldController {\n    private weak var coordinator: SecurityCoordinator?\n    private var shieldWindows: [ScreenShieldWindow] = []\n    private var isVisible = false\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.reconfigureForCurrentScreens()\n            }\n        }\n    }\n\n    public func syncWithCoordinator() {\n        guard let coordinator else { return }\n        let isArmedOrEscalated = (coordinator.state == .armed || coordinator.state == .tamperPending || coordinator.state == .alarm)\n        let shouldShow = coordinator.isShieldPreviewActive || (isArmedOrEscalated && coordinator.settings.blurBackgroundWhenArmed)\n\n        if shouldShow {\n            showShield()\n        } else {\n            hideShield()",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldController.swift\nModule: Multi-Display Screen Shield Manager\nSummary: ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\nKey Symbols: ScreenShieldController, syncWithCoordinator, showShield, hideShield, reconfigureForCurrentScreens, activatePrimary, makeShieldWindow, destroyWindows\nContent Sample:\n//\n//  ScreenShieldController.swift\n//  Pupil\n//\n//  Manages the multi-display full-screen privacy blur shield windows.\n//  Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class ScreenShieldController {\n    private weak var coordinator: SecurityCoordinator?\n    private var shieldWindows: [ScreenShieldWindow] = []\n    private var isVisible = false\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.reconfigureForCurrentScreens()\n            }\n        }\n\n        NotificationCenter.default.addObserver(\n            forName: .screenShieldFocusPrimary,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.activatePrimary()\n            }\n        }\n    }",
       "keywords": [
         "sources",
         "pupil",
@@ -1766,8 +1774,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 298,
-      "content_hash": "a8357746272fe472",
+      "line_count": 317,
+      "content_hash": "f9e54ac1e422afbc",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",

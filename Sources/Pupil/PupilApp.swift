@@ -106,7 +106,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // Prevent force-quitting via Cmd+Q while armed unless the user disarms first
         if coordinator.isMonitoring {
+            if coordinator.state == .arming {
+                coordinator.cancelArmingDuringExitDelay()
+                return .terminateNow
+            }
             revealSettingsWindow()
+            screenShieldController?.syncWithCoordinator()
             NSSound.beep()
             return .terminateCancel
         }

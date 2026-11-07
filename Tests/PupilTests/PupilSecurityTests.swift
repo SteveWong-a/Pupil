@@ -125,8 +125,27 @@ struct PupilSecurityTests {
         #expect(window.canBecomeMain == true)
         #expect(Notification.Name.screenShieldOpenPrompt.rawValue == "PupilScreenShieldOpenPrompt")
         #expect(Notification.Name.screenShieldDismissPrompt.rawValue == "PupilScreenShieldDismissPrompt")
+        #expect(Notification.Name.screenShieldDeleteKey.rawValue == "PupilScreenShieldDeleteKey")
+        #expect(Notification.Name.screenShieldSubmitPrompt.rawValue == "PupilScreenShieldSubmitPrompt")
+        #expect(Notification.Name.screenShieldDigitTyped.rawValue == "PupilScreenShieldDigitTyped")
+        #expect(Notification.Name.screenShieldFocusPrimary.rawValue == "PupilScreenShieldFocusPrimary")
 
-        _ = ScreenShieldView(coordinator: coordinator)
+        _ = ScreenShieldView(coordinator: coordinator, isPrimary: true)
+        _ = ScreenShieldView(coordinator: coordinator, isPrimary: false)
+
+        // Verify NotchWindow and NotchHostingView hit-testing passes through outside active notch bounds
+        let notchWin = NotchWindow(contentRect: NSRect(x: 0, y: 0, width: 442, height: 284))
+        notchWin.activeNotchSize = CGSize(width: 200, height: 44)
+        notchWin.ignoresMouseEvents = false
+        let hostingView = NotchHostingView(
+            rootView: NotchOverlayView(coordinator: coordinator, geometry: NotchGeometry.forPreferredScreen(), onRequestInteractive: { _, _ in }),
+            window: notchWin
+        )
+        hostingView.frame = NSRect(x: 0, y: 0, width: 442, height: 284)
+
+        // Point outside active notch bounds (e.g. at bottom center (221, 50)) should return nil to let website clicks pass through
+        let outsidePoint = NSPoint(x: 221, y: 50)
+        #expect(hostingView.hitTest(outsidePoint) == nil)
     }
 
     @Test("Notch deterrent style has only minimal pill and silent log options")

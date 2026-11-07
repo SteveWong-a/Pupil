@@ -364,6 +364,12 @@ public final class SecurityCoordinator {
     }
 
     public func previewScreenShield(durationSeconds: Double = 4.5) {
+        if durationSeconds <= 0 {
+            isShieldPreviewActive = false
+            onStateChanged?(state)
+            onNotchUpdateNeeded?()
+            return
+        }
         isShieldPreviewActive = true
         logEvent("Screen Shield Preview", detail: "Previewing full-screen privacy blur for \(String(format: "%.1fs", durationSeconds)).", simulated: true)
         onStateChanged?(state)

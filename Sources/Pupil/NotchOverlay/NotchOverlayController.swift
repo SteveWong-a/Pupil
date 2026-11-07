@@ -47,16 +47,17 @@ public final class NotchOverlayController {
         let rootView = NotchOverlayView(
             coordinator: coordinator,
             geometry: geometry,
-            onRequestInteractive: { [weak window] interactive in
+            onRequestInteractive: { [weak window] interactive, size in
                 guard let window else { return }
                 window.acceptsKey = interactive
                 window.ignoresMouseEvents = !interactive
+                window.activeNotchSize = size
                 if interactive {
                     window.makeKey()
                 }
             }
         )
-        window.contentView = NSHostingView(rootView: rootView)
+        window.contentView = NotchHostingView(rootView: rootView, window: window)
         self.panel = window
     }
 

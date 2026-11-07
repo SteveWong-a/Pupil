@@ -105,7 +105,7 @@ public struct PupilEyeVectorView: View {
 public struct NotchOverlayView: View {
     @Bindable var coordinator: SecurityCoordinator
     let geometry: NotchGeometry
-    let onRequestInteractive: (Bool) -> Void
+    let onRequestInteractive: (Bool, CGSize) -> Void
 
     @State private var enteredPin: String = ""
     @State private var shakeTrigger: Int = 0
@@ -118,7 +118,7 @@ public struct NotchOverlayView: View {
     public init(
         coordinator: SecurityCoordinator,
         geometry: NotchGeometry,
-        onRequestInteractive: @escaping (Bool) -> Void
+        onRequestInteractive: @escaping (Bool, CGSize) -> Void
     ) {
         self.coordinator = coordinator
         self.geometry = geometry
@@ -210,9 +210,13 @@ public struct NotchOverlayView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(.spring(response: 0.36, dampingFraction: 0.80), value: displayMode)
+        .onAppear {
+            let interactive = (displayMode == .compactArming || displayMode == .expandedTamper || displayMode == .expandedAlarm)
+            onRequestInteractive(interactive, currentPanelSize)
+        }
         .onChange(of: displayMode) { _, newMode in
             let interactive = (newMode == .compactArming || newMode == .expandedTamper || newMode == .expandedAlarm)
-            onRequestInteractive(interactive)
+            onRequestInteractive(interactive, currentPanelSize)
             if !interactive {
                 enteredPin = ""
             }

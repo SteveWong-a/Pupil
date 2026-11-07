@@ -134,11 +134,12 @@ flowchart LR
 * **Dynamic Island Fallback**: When running on notchless external displays, dynamically transitions to a continuous-corner pill.
 
 ### 4.8. Full-Screen Privacy Blur Shield (`ScreenShieldWindow.swift`, `ScreenShieldView.swift`, `ScreenShieldController.swift`)
-* **Unblurrable While Armed**: Pinned at `CGShieldingWindowLevel()` across all spaces and monitors. Intercepts all mouse events (`ignoresMouseEvents = false`) and blocks access to underlying applications.
+* **Unblurrable While Armed**: Pinned at `CGShieldingWindowLevel()` across all spaces and monitors. Intercepts mouse events to protect confidential displays until Keychain PIN or Touch ID disarm.
 * **Frosted-Glass Blur & Obsidian Vignette**: Renders `NSVisualEffectView` with `.fullScreenUI` material (`state: .active`) and `.behindWindow` blending mode, darkening background windows with an obsidian radial vignette.
-* **Multi-Display Coverage**: Dynamically creates and updates full-screen shielding windows for every screen in `NSScreen.screens` on display connect/disconnect.
-* **On-Demand Native macOS UI Modal Window**: In normal armed/preview state, the screen is clean blur with no card permanently visible. Clicking anywhere or pressing any key summons an authentic macOS dialog in the center requesting the PIN/password with Touch ID option. Clicking outside or pressing Escape smoothly dismisses it back to clean blur. Tamper and alarm escalations automatically open the alert dialog.
-* **Zero Bypass Policy**: The screen cannot be dismissed, bypassed, or unblurred until valid Keychain PIN or Touch ID verification transitions `SecurityCoordinator.state` back to `.disarmed`.
+* **Multi-Display Coverage**: Dynamically creates and updates full-screen shielding windows for every screen in `NSScreen.screens` on display connect/disconnect. The primary display hosts the interactive unlock dialog; secondary displays provide privacy blur and route focus to the primary dialog on click.
+* **Reliable Input & Focus Resilience**: The unlock card is presented front-and-center with immediate AppKit keyboard focus and an in-field clickable Delete (`delete.backward.fill`) button. Background clicks refocus the input field instead of vanishing into an unclickable limbo. The window intercepts Backspace/Delete (key codes 51/117), Return/Enter (36/76), and numeric keystrokes to ensure text editing and deletion always succeed.
+* **Notch Pass-Through Hit-Testing**: `NotchWindow` and `NotchHostingView` dynamically restrict hit-testing to the visible notch silhouette `activeNotchSize`. Clicks outside the notch bounds return `nil`, passing straight through to web pages, browser tabs, and desktop applications below.
+* **Zero Bypass Policy**: The screen cannot be dismissed, bypassed, or unblurred while armed until valid Keychain PIN or Touch ID verification transitions `SecurityCoordinator.state` back to `.disarmed`. During exit-delay arming or preview, pressing Escape or clicking Cancel dismisses the shield cleanly.
 
 ### 4.9. Settings Design System (`SettingsControls.swift`, `SettingsMetrics.swift`, `SettingsTabBar.swift`, `ProgressiveHeaderBlur.swift`)
 * **Native Vibrancy**: `NSVisualEffectView` with `.sidebar` material and appearance-adaptive CIColorControls saturation filter (1.75 in light mode, 1.20 in dark mode).
