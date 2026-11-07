@@ -21,7 +21,7 @@
 | Level | Trigger | Native macOS Response |
 | :--- | :--- | :--- |
 | **1. Armed Deterrence** | Armed from Menu Bar (`⌘A`) or Settings header | Menu bar glyph flips to `eye.slash.fill`; IOKit power and clamshell monitors arm |
-| **2. Gaze Warning** | Sustained gaze toward screen inside camera ROI (Apple `Vision` iris + head pose) | MacBook notch fluidly expands with a tracking eye (`PupilEyeVectorView`) and dwell meter |
+| **2. Gaze Warning** | Sustained gaze toward screen inside camera ROI (Apple `Vision` iris + head pose) | MacBook notch subtly widens with a minimal dark pill status indicator |
 | **3. Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`) or screen locked | Notch expands with an amber countdown; inline Touch ID or Keychain PIN disarms |
 | **4. PIN-Latched Siren** | Clamshell lid closed (`AppleClamshellState`) or countdown expires | `IOPMAssertion` holds sleep while `AVAudioEngine` synthesizes a dual-tone siren until PIN/Touch ID disarm |
 
@@ -37,6 +37,16 @@
 
 ---
 
+## Download & Installation
+
+Just like Glance, Pupil is packaged into a single standalone drag-and-drop macOS disk image (`Pupil.dmg`):
+
+1. **Download**: Grab the latest **`Pupil.dmg`** from GitHub Releases (or generate it locally with `./scripts/build-dmg.sh`).
+2. **Install**: Open `Pupil.dmg` and drag **Pupil.app** into your `/Applications` folder.
+3. **Launch**: Open Pupil from Applications or Spotlight. It lives quietly in your menu bar (`⌘A` to arm, `⌘,` for Settings).
+
+---
+
 ## Building & Running
 
 ### Requirements
@@ -46,13 +56,14 @@
 ### Quick Start
 
 ```bash
-# Build and run tests
-swift build
+# 1. Run unit test suite
 swift test
 
-# Bundle Pupil.app and launch with the Settings window open
-chmod +x scripts/bundle-app.sh
-./scripts/bundle-app.sh debug
+# 2. Package single downloadable installer (Pupil.dmg + Pupil.zip)
+./scripts/build-dmg.sh
+
+# 3. Launch menu bar sentinel or reveal Settings
+open "./dist/Pupil.app"
 ./dist/Pupil.app/Contents/MacOS/Pupil --open-settings
 ```
 

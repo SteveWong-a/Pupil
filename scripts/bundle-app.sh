@@ -16,6 +16,13 @@ rm -rf "${APP_BUNDLE}"
 mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 
+# Generate retina AppIcon.icns if needed
+if [[ ! -f "${PROJECT_DIR}/Resources/AppIcon.icns" ]]; then
+    echo "==> Generating AppIcon.icns..."
+    swift "${PROJECT_DIR}/scripts/generate-icon.swift"
+fi
+cp "${PROJECT_DIR}/Resources/AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
+
 cp "${BIN_PATH}" "${APP_BUNDLE}/Contents/MacOS/Pupil"
 chmod +x "${APP_BUNDLE}/Contents/MacOS/Pupil"
 
@@ -42,6 +49,10 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<'PLIST'
     <string>1.0.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>15.0</string>
     <key>LSUIElement</key>

@@ -135,16 +135,18 @@ public struct GazeSettingsPage: View {
     @ViewBuilder
     private func deterrentStylePreview(_ style: NotchDeterrentStyle) -> some View {
         switch style {
-        case .expandWithEye:
-            PupilEyeVectorView(isOpen: true, accentColor: .cyan, size: 22)
         case .minimalPill:
             HStack(spacing: 4) {
-                Image(systemName: "eye.fill")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.cyan)
+                Circle()
+                    .fill(Color.white.opacity(0.85))
+                    .frame(width: 5, height: 5)
                 Capsule()
                     .fill(Color.black)
                     .frame(width: 24, height: 10)
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color(white: 0.22), lineWidth: 0.8)
+                    )
             }
         case .silent:
             Image(systemName: "eye.slash")
@@ -163,7 +165,7 @@ public struct GazeSettingsPage: View {
                     PupilEyeVectorView(
                         isOpen: coordinator.cameraManager.isRunning || coordinator.isGazeWarningActive,
                         lookOffset: coordinator.eyeLookOffset,
-                        accentColor: .cyan,
+                        accentColor: Color.white.opacity(0.85),
                         size: 36
                     )
                 }
@@ -180,7 +182,7 @@ public struct GazeSettingsPage: View {
                     }
 
                     ProgressView(value: coordinator.gazeDwellProgress)
-                        .tint(.cyan)
+                        .tint(Color.white.opacity(0.85))
 
                     Text("Faces in ROI: \(coordinator.activeFaceCount) · Zero frames written to disk")
                         .font(.system(size: 10))

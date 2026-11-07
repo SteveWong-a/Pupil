@@ -32,6 +32,13 @@ public struct GeneralSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
+                    title: "Blur screen while armed",
+                    subtitle: "Renders a frosted glass blur across all displays so private apps cannot be snooped."
+                ) {
+                    PupilToggle(isOn: $settings.blurBackgroundWhenArmed)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
                     title: "Allow Touch ID to disarm",
                     subtitle: "Use the Touch ID sensor alongside your Keychain PIN."
                 ) {
@@ -97,6 +104,14 @@ public struct GeneralSettingsPage: View {
                         buttonTitle: "Preview in Notch"
                     ) {
                         coordinator.simulateGazeWarning()
+                    }
+                    SettingsGroupDivider()
+                    SettingsActionRowContent(
+                        title: "Preview Screen Shield Blur",
+                        subtitle: "Fades in the full-screen frosted glass privacy blur across all displays for 4.5 seconds.",
+                        buttonTitle: "Preview Blur"
+                    ) {
+                        coordinator.previewScreenShield()
                     }
                 }
             }

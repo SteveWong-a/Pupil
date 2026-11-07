@@ -42,6 +42,7 @@ struct PupilApp: App {
 public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     public let coordinator = SecurityCoordinator()
     private var notchOverlayController: NotchOverlayController?
+    private var screenShieldController: ScreenShieldController?
 
     private var statusItem: NSStatusItem?
     private var statusHeaderItem: NSMenuItem?
@@ -63,13 +64,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         let overlay = NotchOverlayController(coordinator: coordinator)
         self.notchOverlayController = overlay
 
+        let shield = ScreenShieldController(coordinator: coordinator)
+        self.screenShieldController = shield
+
         coordinator.onStateChanged = { [weak self] _ in
             self?.refreshStatusItemIconAndMenu()
             self?.notchOverlayController?.syncWithCoordinator()
+            self?.screenShieldController?.syncWithCoordinator()
         }
         coordinator.onNotchUpdateNeeded = { [weak self] in
             self?.refreshStatusItemIconAndMenu()
             self?.notchOverlayController?.syncWithCoordinator()
+            self?.screenShieldController?.syncWithCoordinator()
         }
 
         PupilSettings.shared.bindMenuBarVisibility { [weak self] visible in
@@ -144,6 +150,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         previewEyeItem.target = self
         previewEyeItem.image = NSImage(systemSymbolName: "eye.fill", accessibilityDescription: nil)
         menu.addItem(previewEyeItem)
+
+        let previewShieldItem = NSMenuItem(
+            title: "Preview Screen Shield Blur",
+            action: #selector(triggerShieldPreview),
+            keyEquivalent: "b"
+        )
+        previewShieldItem.target = self
+        previewShieldItem.image = NSImage(systemSymbolName: "macwindow.on.rectangle", accessibilityDescription: nil)
+        menu.addItem(previewShieldItem)
 
         let simTamperItem = NSMenuItem(
             title: "Simulate Tamper Countdown",
@@ -228,6 +243,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
 
     @objc private func triggerNotchPreview() {
         coordinator.simulateGazeWarning()
+    }
+
+    @objc private func triggerShieldPreview() {
+        coordinator.previewScreenShield()
     }
 
     @objc private func triggerSimulatedTamper() {

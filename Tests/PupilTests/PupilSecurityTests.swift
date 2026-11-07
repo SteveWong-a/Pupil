@@ -102,4 +102,32 @@ struct PupilSecurityTests {
         #expect(coordinator.disarmWithPin("2468") == true)
         #expect(coordinator.state == .disarmed)
     }
+
+    @Test("Screen shield blur settings and preview lifecycle")
+    @MainActor
+    func testScreenShieldAndBlurSettings() {
+        let coordinator = SecurityCoordinator()
+        let settings = coordinator.settings
+        #expect(settings.blurBackgroundWhenArmed == true)
+
+        let shieldController = ScreenShieldController(coordinator: coordinator)
+        shieldController.syncWithCoordinator()
+
+        #expect(coordinator.isShieldPreviewActive == false)
+        coordinator.previewScreenShield(durationSeconds: 0.1)
+        #expect(coordinator.isShieldPreviewActive == true)
+        shieldController.syncWithCoordinator()
+    }
+
+    @Test("Notch deterrent style has only minimal pill and silent log options")
+    @MainActor
+    func testNotchDeterrentStyleOptions() {
+        let options = NotchDeterrentStyle.allCases
+        #expect(options.count == 2)
+        #expect(options.contains(.minimalPill))
+        #expect(options.contains(.silent))
+
+        let settings = PupilSettings.shared
+        #expect(settings.notchStyle == .minimalPill || settings.notchStyle == .silent)
+    }
 }

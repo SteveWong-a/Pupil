@@ -2,8 +2,8 @@
 //  KeychainManager.swift
 //  Pupil
 //
-//  Keychain Services + CryptoKit salted hash store and Touch ID (LocalAuthentication) helper.
-//  Never logs or stores plaintext PINs.
+//  Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper.
+//  Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.
 //
 
 import CryptoKit
@@ -15,7 +15,6 @@ public enum KeychainError: LocalizedError {
     case invalidPinFormat
     case itemNotFound
     case authenticationFailed
-    case osStatus(OSStatus)
 
     public var errorDescription: String? {
         switch self {
@@ -25,21 +24,22 @@ public enum KeychainError: LocalizedError {
             return "No PIN is enrolled yet."
         case .authenticationFailed:
             return "Authentication was cancelled or failed."
-        case .osStatus(let status):
-            let msg = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
-            return "Keychain error: \(msg)"
         }
     }
 }
 
-private struct StoredPinRecord: Codable {
-    let saltHex: String
-    let digestHex: String
+public struct StoredPinRecord: Codable {
+    public let saltHex: String
+    public let digestHex: String
+
+    public init(saltHex: String, digestHex: String) {
+        self.saltHex = saltHex
+        self.digestHex = digestHex
+    }
 }
 
 public enum KeychainManager {
-    nonisolated public static let service = "com.pupil.security"
-    nonisolated private static let pinAccount = "enrolled-pin-sha256"
+    nonisolated public static let storeKey = "pupil.saltedPinRecord"
 
     nonisolated public static func isValidPinFormat(_ pin: String) -> Bool {
         let trimmed = pin.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -48,10 +48,7 @@ public enum KeychainManager {
     }
 
     nonisolated public static var hasEnrolledPin: Bool {
-        if (try? readData(account: pinAccount)) != nil {
-            return true
-        }
-        return UserDefaults.standard.data(forKey: "pupil.fallbackPinRecord") != nil
+        loadStoredRecord() != nil
     }
 
     nonisolated public static func enrollPin(_ pin: String) throws {
@@ -66,19 +63,14 @@ public enum KeychainManager {
 
         let record = StoredPinRecord(saltHex: saltHex, digestHex: digestHex)
         let data = try JSONEncoder().encode(record)
-
-        // Store in macOS Keychain; keep salted hash in UserDefaults fallback for unsigned CLI test runs
-        UserDefaults.standard.set(data, forKey: "pupil.fallbackPinRecord")
-        try? saveData(account: pinAccount, data: data)
+        saveStoredRecord(data)
     }
 
     nonisolated public static func verifyPin(_ candidate: String) -> Bool {
         let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
         guard isValidPinFormat(trimmed) else { return false }
 
-        let data = (try? readData(account: pinAccount)) ?? UserDefaults.standard.data(forKey: "pupil.fallbackPinRecord")
-        guard let data,
-              let record = try? JSONDecoder().decode(StoredPinRecord.self, from: data) else {
+        guard let record = loadStoredRecord() else {
             return false
         }
         let candidateDigest = hashPin(trimmed, saltHex: record.saltHex)
@@ -86,13 +78,11 @@ public enum KeychainManager {
     }
 
     nonisolated public static func clearEnrolledPin() {
+        UserDefaults.standard.removeObject(forKey: storeKey)
         UserDefaults.standard.removeObject(forKey: "pupil.fallbackPinRecord")
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: pinAccount
-        ]
-        SecItemDelete(query as CFDictionary)
+        if let fileURL = recordFileURL {
+            try? FileManager.default.removeItem(at: fileURL)
+        }
     }
 
     nonisolated public static func authenticateWithTouchID(reason: String) async -> Bool {
@@ -125,41 +115,42 @@ public enum KeychainManager {
         return diff == 0
     }
 
-    nonisolated private static func readData(account: String) throws -> Data {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess, let data = item as? Data else {
-            throw KeychainError.osStatus(status)
+    nonisolated private static var recordFileURL: URL? {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
         }
-        return data
+        let dir = appSupport.appendingPathComponent("Pupil", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [
+                .posixPermissions: 0o700
+            ])
+        }
+        return dir.appendingPathComponent("pin.record")
     }
 
-    nonisolated private static func saveData(account: String, data: Data) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
-        let updateStatus = SecItemUpdate(
-            query as CFDictionary,
-            [kSecValueData as String: data] as CFDictionary
-        )
-        if updateStatus == errSecSuccess { return }
-        if updateStatus != errSecItemNotFound {
-            throw KeychainError.osStatus(updateStatus)
+    nonisolated private static func loadStoredRecord() -> StoredPinRecord? {
+        if let data = UserDefaults.standard.data(forKey: storeKey),
+           let record = try? JSONDecoder().decode(StoredPinRecord.self, from: data) {
+            return record
         }
-        var addQuery = query
-        addQuery[kSecValueData as String] = data
-        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-        guard addStatus == errSecSuccess else {
-            throw KeychainError.osStatus(addStatus)
+        if let data = UserDefaults.standard.data(forKey: "pupil.fallbackPinRecord"),
+           let record = try? JSONDecoder().decode(StoredPinRecord.self, from: data) {
+            return record
+        }
+        if let fileURL = recordFileURL,
+           let data = try? Data(contentsOf: fileURL),
+           let record = try? JSONDecoder().decode(StoredPinRecord.self, from: data) {
+            return record
+        }
+        return nil
+    }
+
+    nonisolated private static func saveStoredRecord(_ data: Data) {
+        UserDefaults.standard.set(data, forKey: storeKey)
+        UserDefaults.standard.set(data, forKey: "pupil.fallbackPinRecord")
+        if let fileURL = recordFileURL {
+            try? data.write(to: fileURL, options: [.atomic])
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         }
     }
 }

@@ -50,7 +50,6 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
 }
 
 public enum NotchDeterrentStyle: String, CaseIterable, Identifiable, Codable, Sendable {
-    case expandWithEye
     case minimalPill
     case silent
 
@@ -58,7 +57,6 @@ public enum NotchDeterrentStyle: String, CaseIterable, Identifiable, Codable, Se
 
     public var title: String {
         switch self {
-        case .expandWithEye: return "Notch Eye"
         case .minimalPill: return "Minimal Pill"
         case .silent: return "Silent Log"
         }
@@ -66,9 +64,8 @@ public enum NotchDeterrentStyle: String, CaseIterable, Identifiable, Codable, Se
 
     public var subtitle: String {
         switch self {
-        case .expandWithEye: return "Expands the notch with a tracking eye and dwell meter when someone stares."
-        case .minimalPill: return "Widens the notch silhouette subtly with a status glyph."
-        case .silent: return "Logs gaze events silently without expanding the notch."
+        case .minimalPill: return "Widens the dark notch silhouette subtly with a status glyph."
+        case .silent: return "Logs gaze events silently without modifying the notch."
         }
     }
 }
@@ -161,6 +158,10 @@ public final class PupilSettings {
         didSet { defaults.set(holdSleepOnLidClose, forKey: Keys.holdSleepOnLidClose) }
     }
 
+    public var blurBackgroundWhenArmed: Bool {
+        didSet { defaults.set(blurBackgroundWhenArmed, forKey: Keys.blurBackgroundWhenArmed) }
+    }
+
     public var allowTouchIDDisarm: Bool {
         didSet { defaults.set(allowTouchIDDisarm, forKey: Keys.allowTouchIDDisarm) }
     }
@@ -242,7 +243,7 @@ public final class PupilSettings {
            let style = NotchDeterrentStyle(rawValue: rawStyle) {
             self.notchStyle = style
         } else {
-            self.notchStyle = .expandWithEye
+            self.notchStyle = .minimalPill
         }
         if let rawTriggers = defaults.stringArray(forKey: Keys.hardwareTriggers) {
             let parsed = Set(rawTriggers.compactMap(HardwareTrigger.init(rawValue:)))
@@ -251,6 +252,7 @@ public final class PupilSettings {
             self.hardwareTriggers = Set(HardwareTrigger.allCases)
         }
         self.holdSleepOnLidClose = defaults.object(forKey: Keys.holdSleepOnLidClose) as? Bool ?? true
+        self.blurBackgroundWhenArmed = defaults.object(forKey: Keys.blurBackgroundWhenArmed) as? Bool ?? true
         self.allowTouchIDDisarm = defaults.object(forKey: Keys.allowTouchIDDisarm) as? Bool ?? true
         self.hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
         self.sirenFrequencyHz = defaults.object(forKey: Keys.sirenFrequencyHz) as? Int ?? 880
@@ -281,6 +283,7 @@ public final class PupilSettings {
         static let notchStyle = "pupil.notchStyle"
         static let hardwareTriggers = "pupil.hardwareTriggers"
         static let holdSleepOnLidClose = "pupil.holdSleepOnLidClose"
+        static let blurBackgroundWhenArmed = "pupil.blurBackgroundWhenArmed"
         static let allowTouchIDDisarm = "pupil.allowTouchIDDisarm"
         static let hapticFeedbackEnabled = "pupil.hapticFeedbackEnabled"
         static let sirenFrequencyHz = "pupil.sirenFrequencyHz"

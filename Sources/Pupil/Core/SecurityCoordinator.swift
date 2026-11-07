@@ -85,6 +85,7 @@ public final class SecurityCoordinator {
     public private(set) var events: [SecurityEventRecord] = []
     public private(set) var hasEnrolledPin: Bool = KeychainManager.hasEnrolledPin
     public private(set) var isCameraPreviewRequested: Bool = false
+    public private(set) var isShieldPreviewActive: Bool = false
 
     public let settings: PupilSettings
     public let powerMonitor: PowerAndLidMonitor
@@ -111,9 +112,9 @@ public final class SecurityCoordinator {
 
         // Ensure a default PIN ("1234") is enrolled on first launch if none exists so the user can test immediately,
         // and clearly surface PIN changes in Settings.
-        if !KeychainManager.hasEnrolledPin {
+        if !hasEnrolledPin {
             try? KeychainManager.enrollPin("1234")
-            self.hasEnrolledPin = KeychainManager.hasEnrolledPin
+            self.hasEnrolledPin = true
         }
 
         bindSensors()
@@ -216,6 +217,7 @@ public final class SecurityCoordinator {
         state = .disarmed
         activeTamperSource = nil
         isGazeWarningActive = false
+        isShieldPreviewActive = false
         gazeDwellProgress = 0
         gazeAggregator.reset()
         syncCameraLifecycle()
@@ -309,6 +311,22 @@ public final class SecurityCoordinator {
         latestGazeScore = 0.92
         eyeLookOffset = CGPoint(x: 0.25, y: -0.1)
         activateGazeWarning(simulated: true)
+    }
+
+    public func previewScreenShield(durationSeconds: Double = 4.5) {
+        isShieldPreviewActive = true
+        logEvent("Screen Shield Preview", detail: "Previewing full-screen privacy blur for \(String(format: "%.1fs", durationSeconds)).", simulated: true)
+        onStateChanged?(state)
+        onNotchUpdateNeeded?()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + durationSeconds) { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.isShieldPreviewActive else { return }
+                self.isShieldPreviewActive = false
+                self.onStateChanged?(self.state)
+                self.onNotchUpdateNeeded?()
+            }
+        }
     }
 
     private func activateGazeWarning(simulated: Bool) {

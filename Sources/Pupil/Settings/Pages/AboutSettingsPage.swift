@@ -55,7 +55,7 @@ public struct AboutSettingsPage: View {
                     levelRow(
                         number: "2",
                         title: "Gaze Warning",
-                        detail: "Sustained gaze inside camera ROI expands the MacBook notch with a tracking eye."
+                        detail: "Sustained gaze inside camera ROI widens the MacBook notch with a minimal dark pill status indicator."
                     )
                     SettingsGroupDivider()
                     levelRow(

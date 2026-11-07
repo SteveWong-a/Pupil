@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Package Pupil.dmg
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Unit Tests
+        run: swift test
+
+      - name: Build and Package Single Downloadable DMG & ZIP
+        run: |
+          chmod +x scripts/*.sh scripts/*.swift
+          ./scripts/build-dmg.sh
+
+      - name: Create GitHub Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          name: Pupil ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/Pupil.dmg
+            dist/Pupil.dmg.sha256
+            dist/Pupil.zip
+            dist/Pupil.zip.sha256

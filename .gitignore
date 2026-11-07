@@ -5,6 +5,7 @@ xcuserdata/
 DerivedData/
 .swiftpm/
 dist/
+ENGINEERING_PLAYBOOK.md
 *.xcodeproj/project.xcworkspace/
 *.xcodeproj/xcuserdata/
 .env

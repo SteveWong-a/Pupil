@@ -20,7 +20,7 @@ public struct PupilEyeVectorView: View {
     public init(
         isOpen: Bool,
         lookOffset: CGPoint = .zero,
-        accentColor: Color = Color(red: 0x0A / 255, green: 0x84 / 255, blue: 0xFF / 255),
+        accentColor: Color = Color.white.opacity(0.85),
         size: CGFloat = 48
     ) {
         self.isOpen = isOpen
@@ -142,7 +142,6 @@ public struct NotchOverlayView: View {
         case .armed:
             if coordinator.isGazeWarningActive {
                 switch coordinator.settings.notchStyle {
-                case .expandWithEye: return .expandedGaze
                 case .minimalPill: return .minimalGaze
                 case .silent: return .hidden
                 }
@@ -173,11 +172,6 @@ public struct NotchOverlayView: View {
             let height = notchH + 42
             return CGSize(width: width + flare, height: height)
 
-        case .expandedGaze:
-            let width: CGFloat = max(320, geometry.closedSize.width + 80)
-            let height = notchH + 156
-            return CGSize(width: width + flare, height: height)
-
         case .expandedTamper, .expandedAlarm:
             let width: CGFloat = max(340, geometry.closedSize.width + 100)
             let height = notchH + 168
@@ -189,7 +183,7 @@ public struct NotchOverlayView: View {
         switch displayMode {
         case .hidden: return NotchGeometry.closedTopRadius
         case .compactArming, .minimalGaze: return 12
-        case .expandedGaze, .expandedTamper, .expandedAlarm: return NotchGeometry.openTopRadius
+        case .expandedTamper, .expandedAlarm: return NotchGeometry.openTopRadius
         }
     }
 
@@ -197,7 +191,7 @@ public struct NotchOverlayView: View {
         switch displayMode {
         case .hidden: return NotchGeometry.closedBottomRadius
         case .compactArming, .minimalGaze: return 20
-        case .expandedGaze, .expandedTamper, .expandedAlarm: return NotchGeometry.openBottomRadius
+        case .expandedTamper, .expandedAlarm: return NotchGeometry.openBottomRadius
         }
     }
 
@@ -237,7 +231,7 @@ public struct NotchOverlayView: View {
                 )
                 .stroke(
                     LinearGradient(
-                        colors: [borderTint.opacity(0.85), borderTint.opacity(0.20)],
+                        colors: [borderTint.opacity(0.95), borderTint.opacity(0.35)],
                         startPoint: .top,
                         endPoint: .bottom
                     ),
@@ -267,10 +261,10 @@ public struct NotchOverlayView: View {
             return Color(red: 1.0, green: 0.27, blue: 0.23)
         case .expandedTamper:
             return Color(red: 1.0, green: 0.62, blue: 0.04)
-        case .expandedGaze, .minimalGaze:
-            return Color(red: 0.04, green: 0.52, blue: 1.0)
+        case .minimalGaze:
+            return Color(white: 0.16)
         default:
-            return Color.white.opacity(0.18)
+            return Color(white: 0.14)
         }
     }
 
@@ -315,7 +309,7 @@ public struct NotchOverlayView: View {
         case .minimalGaze:
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(red: 0.04, green: 0.52, blue: 1.0))
+                    .fill(Color.white.opacity(0.85))
                     .frame(width: 6, height: 6)
 
                 Text("WATCHING")
@@ -327,59 +321,14 @@ public struct NotchOverlayView: View {
 
                 Text(String(format: "%.0f%% LOCK", coordinator.latestGazeScore * 100))
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Color(red: 0.04, green: 0.52, blue: 1.0))
-                    .padding(.horizontal, 6)
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .padding(.horizontal, 7)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color(red: 0.04, green: 0.52, blue: 1.0).opacity(0.15)))
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 8)
             .padding(.vertical, 8)
-
-        case .expandedGaze:
-            VStack(spacing: 8) {
-                PupilEyeVectorView(
-                    isOpen: true,
-                    lookOffset: coordinator.eyeLookOffset,
-                    accentColor: Color(red: 0.04, green: 0.52, blue: 1.0),
-                    size: 46
-                )
-                .padding(.top, 2)
-
-                VStack(spacing: 3) {
-                    HStack(spacing: 5) {
-                        Circle()
-                            .fill(Color(red: 0.04, green: 0.52, blue: 1.0))
-                            .frame(width: 5, height: 5)
-                        Text("GAZE DETECTED")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .tracking(0.8)
-                            .foregroundStyle(Color.white)
-                    }
-
-                    Text("On-device iris tracking active · Zero frames saved")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.white.opacity(0.55))
-                }
-
-                // Precision dwell meter
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.12))
-                        .frame(width: 170, height: 4)
-
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(red: 0.04, green: 0.52, blue: 1.0), Color.cyan],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: max(8, 170 * coordinator.gazeDwellProgress), height: 4)
-                }
-                .padding(.bottom, 6)
-            }
-            .padding(.vertical, 6)
 
         case .expandedTamper, .expandedAlarm:
             let isAlarm = (displayMode == .expandedAlarm)
@@ -462,7 +411,6 @@ private enum OverlayDisplayMode: Equatable {
     case hidden
     case compactArming
     case minimalGaze
-    case expandedGaze
     case expandedTamper
     case expandedAlarm
 }

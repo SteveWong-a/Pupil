@@ -55,7 +55,7 @@ public struct HeaderStatusButton: View {
         switch coordinator.state {
         case .disarmed: return Color.secondary.opacity(0.5)
         case .arming: return PupilTheme.warningAmber
-        case .armed: return coordinator.isGazeWarningActive ? Color.cyan : PupilTheme.armedGreen
+        case .armed: return coordinator.isGazeWarningActive ? Color.white.opacity(0.9) : PupilTheme.armedGreen
         case .tamperPending: return PupilTheme.warningAmber
         case .alarm: return PupilTheme.alarmRed
         }
