@@ -58,6 +58,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        installStatusItemIfNeeded()
+
         let overlay = NotchOverlayController(coordinator: coordinator)
         self.notchOverlayController = overlay
 
@@ -112,7 +114,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
 
     private func installStatusItemIfNeeded() {
         guard statusItem == nil else { return }
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.autosaveName = "com.pupil.security.menubar"
         let menu = NSMenu()
         menu.delegate = self
 
@@ -173,14 +176,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
 
     private func refreshStatusItemIconAndMenu() {
         if let button = statusItem?.button {
-            let symbolName = coordinator.menuBarSymbolName
-            let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Pupil Security")?.withSymbolConfiguration(config)
-            image?.isTemplate = true
-            button.image = image
+            let icon = MenuBarIconFactory.makeStatusIcon(
+                state: coordinator.state,
+                isGazeActive: coordinator.isGazeWarningActive
+            )
+            button.image = icon
+            button.imagePosition = .imageLeft
+
             if coordinator.state == .arming || coordinator.state == .tamperPending {
+                statusItem?.length = NSStatusItem.variableLength
                 button.title = " \(coordinator.countdownSecondsRemaining)s"
             } else {
+                statusItem?.length = NSStatusItem.squareLength
                 button.title = ""
             }
         }

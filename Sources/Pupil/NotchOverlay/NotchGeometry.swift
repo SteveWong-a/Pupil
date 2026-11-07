@@ -19,22 +19,22 @@ public struct NotchGeometry: Sendable {
 
     public var style: NotchPanelStyle { isPhysicalNotch ? .notch : .pill }
 
-    public static let notchOpenSize = CGSize(width: 310, height: 158)
+    public static let notchOpenSize = CGSize(width: 320, height: 180)
     public static let pillClosedSize = CGSize(width: 96, height: 26)
-    public static let pillOpenSize = CGSize(width: 300, height: 154)
-    public static let pillTopGap: CGFloat = 4
-
-    public static let minimalFlankWidth: CGFloat = 56
-    public static let minimalPillOpenWidth: CGFloat = 190
-    public static let minimalPillOpenHeight: CGFloat = 38
+    public static let pillOpenSize = CGSize(width: 300, height: 160)
+    public static let pillTopGap: CGFloat = 6
 
     public static let closedTopRadius: CGFloat = 8
     public static let closedBottomRadius: CGFloat = 12
     public static let openTopRadius: CGFloat = 16
     public static let openBottomRadius: CGFloat = 34
 
-    public static let shadowPadding: CGFloat = 24
+    public static let shadowPadding: CGFloat = 28
     public static let hoverBump: CGFloat = 6
+
+    public var hardwareNotchHeight: CGFloat {
+        isPhysicalNotch ? max(32, closedSize.height) : 0
+    }
 
     public static func flareAllowance(topRadius: CGFloat, style: NotchPanelStyle) -> CGFloat {
         style == .notch ? topRadius * 2 : 0
@@ -43,8 +43,8 @@ public struct NotchGeometry: Sendable {
     public static func windowSize(for style: NotchPanelStyle) -> CGSize {
         let base = style == .notch ? notchOpenSize : pillOpenSize
         return CGSize(
-            width: base.width + shadowPadding * 2 + hoverBump + 40,
-            height: base.height + shadowPadding + hoverBump + (style == .pill ? pillTopGap : 0) + 30
+            width: base.width + shadowPadding * 2 + hoverBump + 60,
+            height: base.height + shadowPadding + hoverBump + (style == .pill ? pillTopGap : 0) + 70
         )
     }
 
