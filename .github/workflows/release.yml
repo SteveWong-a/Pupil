@@ -39,3 +39,4 @@ jobs:
             dist/Pupil.dmg.sha256
             dist/Pupil.zip
             dist/Pupil.zip.sha256
+

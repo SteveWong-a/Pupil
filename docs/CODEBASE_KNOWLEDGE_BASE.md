@@ -183,7 +183,9 @@ flowchart LR
 | `Sources/Pupil/Settings/Pages/AlarmSettingsPage.swift` | Siren Pitch & Session Event Audit Log | `AlarmSettingsPage` |
 | `Sources/Pupil/Settings/Pages/AboutSettingsPage.swift` | Version Info & Privacy Specifications | `AboutSettingsPage` |
 | `Tests/PupilTests/PupilSecurityTests.swift` | Unit Tests for Keychain, Dwell, State | `PupilSecurityTests` |
-| `scripts/bundle-app.sh` | Build & Codesigning Packaging Script | `bundle-app.sh` |
+| `scripts/bundle-app.sh` | App Bundle Packaging Script | `bundle-app.sh` |
+| `scripts/build-dmg.sh` | Drag-and-Drop DMG Installer & ZIP Packager | `build-dmg.sh` |
+| `scripts/generate-icon.swift` | Multi-resolution Retina AppIcon.icns Generator | `generate-icon.swift` |
 | `scripts/generate_embeddings.py` | Embeddings & Metadata Generator | `generate_embeddings.py` |
 
 ---
@@ -194,11 +196,11 @@ flowchart LR
 # 1. Run unit test suite
 swift test
 
-# 2. Compile debug build
-swift build -c debug
+# 2. Package single downloadable installer (Pupil.dmg & Pupil.zip)
+./scripts/build-dmg.sh
 
-# 3. Bundle standalone .app with Info.plist & ad-hoc codesign
-./scripts/bundle-app.sh debug
+# 3. Mount and verify the installer disk image
+hdiutil attach dist/Pupil.dmg
 
 # 4. Launch with Settings window immediately visible
 ./dist/Pupil.app/Contents/MacOS/Pupil --open-settings

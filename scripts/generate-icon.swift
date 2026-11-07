@@ -150,3 +150,4 @@ try? fileManager.removeItem(atPath: tempPngPath)
 try? fileManager.removeItem(atPath: iconsetPath)
 
 print("Generated retina AppIcon.icns -> \(icnsDest)")
+

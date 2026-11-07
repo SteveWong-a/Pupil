@@ -370,20 +370,23 @@ public struct SettingsOptionTile<Preview: View>: View {
 public struct VisualEffectView: NSViewRepresentable {
     public var material: NSVisualEffectView.Material = .sidebar
     public var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    public var state: NSVisualEffectView.State = .followsWindowActiveState
 
     public init(
         material: NSVisualEffectView.Material = .sidebar,
-        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow,
+        state: NSVisualEffectView.State = .followsWindowActiveState
     ) {
         self.material = material
         self.blendingMode = blendingMode
+        self.state = state
     }
 
     public func makeNSView(context: Context) -> AppearanceAdaptiveVisualEffectView {
         let view = AppearanceAdaptiveVisualEffectView()
         view.material = material
         view.blendingMode = blendingMode
-        view.state = .followsWindowActiveState
+        view.state = state
         view.wantsLayer = true
         view.applyFilterForCurrentAppearance()
         return view
@@ -392,6 +395,7 @@ public struct VisualEffectView: NSViewRepresentable {
     public func updateNSView(_ nsView: AppearanceAdaptiveVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+        nsView.state = state
     }
 }
 

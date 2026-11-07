@@ -117,6 +117,15 @@ struct PupilSecurityTests {
         coordinator.previewScreenShield(durationSeconds: 0.1)
         #expect(coordinator.isShieldPreviewActive == true)
         shieldController.syncWithCoordinator()
+
+        // Verify shield window creation and prompt notification tokens
+        let window = ScreenShieldWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 600))
+        #expect(window.canBecomeKey == true)
+        #expect(window.canBecomeMain == true)
+        #expect(Notification.Name.screenShieldOpenPrompt.rawValue == "PupilScreenShieldOpenPrompt")
+        #expect(Notification.Name.screenShieldDismissPrompt.rawValue == "PupilScreenShieldDismissPrompt")
+
+        _ = ScreenShieldView(coordinator: coordinator)
     }
 
     @Test("Notch deterrent style has only minimal pill and silent log options")

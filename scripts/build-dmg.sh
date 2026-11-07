@@ -40,3 +40,4 @@ echo "==> Computing SHA-256 checksums..."
 echo "==> Single downloadable app packaging complete:"
 echo "    DMG: ${DMG_PATH} ($(du -sh "${DMG_PATH}" | cut -f1))"
 echo "    ZIP: ${ZIP_PATH} ($(du -sh "${ZIP_PATH}" | cut -f1))"
+

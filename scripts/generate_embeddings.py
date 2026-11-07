@@ -88,6 +88,8 @@ MODULE_MAP = {
     "PupilSecurityTests.swift": "Deterministic Security Test Suite",
     "Package.swift": "Swift Package Manager Definition",
     "bundle-app.sh": "App Bundle Packaging Script",
+    "build-dmg.sh": "Single Downloadable DMG & ZIP Packaging Script",
+    "generate-icon.swift": "Retina AppIcon.icns Generator",
 }
 
 def extract_symbols(content: str):

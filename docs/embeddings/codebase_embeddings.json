@@ -2,11 +2,13 @@
   "repository": "Pupil",
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
-  "total_indexed_files": 33,
-  "total_source_lines": 5345,
+  "total_indexed_files": 35,
+  "total_source_lines": 5752,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
+    "scripts/build-dmg.sh": [],
+    "scripts/generate-icon.swift": [],
     "Sources/Pupil/PupilApp.swift": [
       "PupilApp",
       "AppDelegate",
@@ -131,10 +133,14 @@
       "repositionWindow"
     ],
     "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift": [
-      "ScreenShieldWindow"
+      "ScreenShieldWindow",
+      "sendEvent",
+      "keyDown"
     ],
     "Sources/Pupil/ScreenShield/ScreenShieldView.swift": [
       "ScreenShieldView",
+      "openPrompt",
+      "closePrompt",
       "submitPin",
       "triggerErrorShake"
     ],
@@ -278,11 +284,11 @@
       "chunk_id": "pupil::scripts::bundle-app.sh",
       "file_path": "scripts/bundle-app.sh",
       "module_category": "App Bundle Packaging Script",
-      "line_count": 61,
-      "content_hash": "6416f575738be314",
+      "line_count": 72,
+      "content_hash": "1dba1fa77646e15f",
       "symbols": [],
-      "summary": "!/usr/bin/env bash",
-      "semantic_text": "File: scripts/bundle-app.sh\nModule: App Bundle Packaging Script\nSummary: !/usr/bin/env bash\nKey Symbols: \nContent Sample:\n#!/usr/bin/env bash\nset -euo pipefail\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROJECT_DIR=\"$(cd \"${SCRIPT_DIR}/..\" && pwd)\"\nBUILD_CONFIG=\"${1:-release}\"\n\necho \"==> Building Pupil (${BUILD_CONFIG})...\"\ncd \"${PROJECT_DIR}\"\nswift build -c \"${BUILD_CONFIG}\"\n\nBIN_PATH=\"$(swift build -c \"${BUILD_CONFIG}\" --show-bin-path)/Pupil\"\nAPP_BUNDLE=\"${PROJECT_DIR}/dist/Pupil.app\"\n\nrm -rf \"${APP_BUNDLE}\"\nmkdir -p \"${APP_BUNDLE}/Contents/MacOS\"\nmkdir -p \"${APP_BUNDLE}/Contents/Resources\"\n\ncp \"${BIN_PATH}\" \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\nchmod +x \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\n\ncat > \"${APP_BUNDLE}/Contents/Info.plist\" <<'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>CFBundleDevelopmentRegion</key>\n    <string>en</string>\n    <key>CFBundleExecutable</key>\n    <string>Pupil</string>\n    <key>CFBundleIdentifier</key>\n    <string>com.pupil.security</string>\n    <key>CFBundleInfoDictionaryVersion</key>\n    <string>6.0</string>\n    <key>CFBundleName</key>\n    <string>Pupil</string>\n    <key>CFBundleDisplayName</key>\n    <string>Pupil</string>\n    <key>CFBundlePackageType</key>\n    <string>APPL</string>",
+      "summary": "!/usr/bin/env bash Generate retina AppIcon.icns if needed",
+      "semantic_text": "File: scripts/bundle-app.sh\nModule: App Bundle Packaging Script\nSummary: !/usr/bin/env bash Generate retina AppIcon.icns if needed\nKey Symbols: \nContent Sample:\n#!/usr/bin/env bash\nset -euo pipefail\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROJECT_DIR=\"$(cd \"${SCRIPT_DIR}/..\" && pwd)\"\nBUILD_CONFIG=\"${1:-release}\"\n\necho \"==> Building Pupil (${BUILD_CONFIG})...\"\ncd \"${PROJECT_DIR}\"\nswift build -c \"${BUILD_CONFIG}\"\n\nBIN_PATH=\"$(swift build -c \"${BUILD_CONFIG}\" --show-bin-path)/Pupil\"\nAPP_BUNDLE=\"${PROJECT_DIR}/dist/Pupil.app\"\n\nrm -rf \"${APP_BUNDLE}\"\nmkdir -p \"${APP_BUNDLE}/Contents/MacOS\"\nmkdir -p \"${APP_BUNDLE}/Contents/Resources\"\n\n# Generate retina AppIcon.icns if needed\nif [[ ! -f \"${PROJECT_DIR}/Resources/AppIcon.icns\" ]]; then\n    echo \"==> Generating AppIcon.icns...\"\n    swift \"${PROJECT_DIR}/scripts/generate-icon.swift\"\nfi\ncp \"${PROJECT_DIR}/Resources/AppIcon.icns\" \"${APP_BUNDLE}/Contents/Resources/AppIcon.icns\"\n\ncp \"${BIN_PATH}\" \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\nchmod +x \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\n\ncat > \"${APP_BUNDLE}/Contents/Info.plist\" <<'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>CFBundleDevelopmentRegion</key>\n    <string>en</string>\n    <key>CFBundleExecutable</key>\n    <string>Pupil</string>\n    <key>CFBundleIdentifier</key>\n    <string>com.pupil.security</string>\n    <key>CFBundleInfoDictionaryVersion</key>",
       "keywords": [
         "scripts",
         "bundle",
@@ -294,7 +300,70 @@
         "usr",
         "bin",
         "env",
+        "bash",
+        "generate",
+        "retina",
+        "appicon",
+        "icns",
+        "needed"
+      ]
+    },
+    {
+      "chunk_id": "pupil::scripts::build-dmg.sh",
+      "file_path": "scripts/build-dmg.sh",
+      "module_category": "Single Downloadable DMG & ZIP Packaging Script",
+      "line_count": 43,
+      "content_hash": "6560957fd58fea7b",
+      "symbols": [],
+      "summary": "!/usr/bin/env bash",
+      "semantic_text": "File: scripts/build-dmg.sh\nModule: Single Downloadable DMG & ZIP Packaging Script\nSummary: !/usr/bin/env bash\nKey Symbols: \nContent Sample:\n#!/usr/bin/env bash\nset -euo pipefail\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROJECT_DIR=\"$(cd \"${SCRIPT_DIR}/..\" && pwd)\"\nDIST_DIR=\"${PROJECT_DIR}/dist\"\nAPP_BUNDLE=\"${DIST_DIR}/Pupil.app\"\nDMG_PATH=\"${DIST_DIR}/Pupil.dmg\"\nZIP_PATH=\"${DIST_DIR}/Pupil.zip\"\n\necho \"==> Ensuring Pupil.app is bundled...\"\nif [[ ! -d \"${APP_BUNDLE}\" ]]; then\n    \"${SCRIPT_DIR}/bundle-app.sh\" release\nfi\n\necho \"==> Packaging Pupil.dmg (macOS Drag & Drop Installer)...\"\nrm -f \"${DMG_PATH}\"\n\nDMG_STAGING=\"$(mktemp -d /tmp/pupil-dmg-staging-XXXXXX)\"\ntrap 'rm -rf \"${DMG_STAGING}\"' EXIT\n\ncp -R \"${APP_BUNDLE}\" \"${DMG_STAGING}/Pupil.app\"\nln -s /Applications \"${DMG_STAGING}/Applications\"\n\nhdiutil create \\\n  -volname \"Pupil Installer\" \\\n  -srcfolder \"${DMG_STAGING}\" \\\n  -ov \\\n  -format UDZO \\\n  \"${DMG_PATH}\"\n\necho \"==> Packaging Pupil.zip...\"\nrm -f \"${ZIP_PATH}\"\n(cd \"${DIST_DIR}\" && zip -q -r -y \"Pupil.zip\" \"Pupil.app\")\n\necho \"==> Computing SHA-256 checksums...\"\n(cd \"${DIST_DIR}\" && shasum -a 256 \"Pupil.dmg\" > \"Pupil.dmg.sha256\")\n(cd \"${DIST_DIR}\" && shasum -a 256 \"Pupil.zip\" > \"Pupil.zip.sha256\")\n\necho \"==> Single downloadable app packaging complete:\"",
+      "keywords": [
+        "scripts",
+        "build",
+        "dmg",
+        "single",
+        "downloadable",
+        "dmg",
+        "zip",
+        "packaging",
+        "script",
+        "usr",
+        "bin",
+        "env",
         "bash"
+      ]
+    },
+    {
+      "chunk_id": "pupil::scripts::generate-icon.swift",
+      "file_path": "scripts/generate-icon.swift",
+      "module_category": "Retina AppIcon.icns Generator",
+      "line_count": 153,
+      "content_hash": "de46582fc252795a",
+      "symbols": [],
+      "summary": "!/usr/bin/env swift 1. macOS App Icon Squircle base (Apple continuous corner standard)",
+      "semantic_text": "File: scripts/generate-icon.swift\nModule: Retina AppIcon.icns Generator\nSummary: !/usr/bin/env swift 1. macOS App Icon Squircle base (Apple continuous corner standard)\nKey Symbols: \nContent Sample:\n#!/usr/bin/env swift\nimport AppKit\nimport Foundation\n\nlet fileManager = FileManager.default\nlet currentDir = URL(fileURLWithPath: fileManager.currentDirectoryPath)\nlet resourcesDir = currentDir.appendingPathComponent(\"Resources\")\ntry? fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)\n\nlet size = NSSize(width: 1024, height: 1024)\nlet img = NSImage(size: size)\nimg.lockFocus()\nguard let ctx = NSGraphicsContext.current?.cgContext else {\n    fputs(\"Failed to get graphics context\\n\", stderr)\n    exit(1)\n}\n\n// 1. macOS App Icon Squircle base (Apple continuous corner standard)\nlet squircleRect = CGRect(x: 90, y: 90, width: 844, height: 844)\nlet squirclePath = CGPath(roundedRect: squircleRect, cornerWidth: 190, cornerHeight: 190, transform: nil)\n\n// Subtle drop shadow under squircle\nctx.saveGState()\nctx.setShadow(offset: CGSize(width: 0, height: -24), blur: 36, color: CGColor(gray: 0, alpha: 0.45))\nctx.addPath(squirclePath)\nctx.setFillColor(CGColor(gray: 0.05, alpha: 1.0))\nctx.fillPath()\nctx.restoreGState()\n\n// Base fill: dark obsidian radial gradient\nctx.saveGState()\nctx.addPath(squirclePath)\nctx.clip()\nlet colors = [\n    CGColor(red: 0.12, green: 0.12, blue: 0.15, alpha: 1.0),\n    CGColor(red: 0.04, green: 0.04, blue: 0.06, alpha: 1.0)\n] as CFArray\nlet colorSpace = CGColorSpaceCreateDeviceRGB()\nif let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: [0.0, 1.0]) {\n    ctx.drawRadialGradient(",
+      "keywords": [
+        "scripts",
+        "generate",
+        "icon",
+        "swift",
+        "retina",
+        "appicon",
+        "icns",
+        "generator",
+        "usr",
+        "bin",
+        "env",
+        "swift",
+        "macos",
+        "app",
+        "icon",
+        "squircle",
+        "base",
+        "apple",
+        "continuous",
+        "corner",
+        "standard"
       ]
     },
     {
@@ -889,13 +958,15 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldWindow.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift",
       "module_category": "Shielding-Level Privacy Blur NSPanel",
-      "line_count": 38,
-      "content_hash": "d79b4e914de4cb71",
+      "line_count": 59,
+      "content_hash": "e9a12b37f9da5d69",
       "symbols": [
-        "ScreenShieldWindow"
+        "ScreenShieldWindow",
+        "sendEvent",
+        "keyDown"
       ],
       "summary": "ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless, .nonactivatingPanel],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = false\n        hidesOnDeactivate = false\n    }\n\n    public override var canBecomeKey: Bool { true }\n    public override var canBecomeMain: Bool { false }\n}\n",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = false\n        hidesOnDeactivate = false\n    }\n\n    public override var canBecomeKey: Bool { true }",
       "keywords": [
         "sources",
         "pupil",
@@ -928,15 +999,17 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 244,
-      "content_hash": "4d6215bb9332e8e8",
+      "line_count": 410,
+      "content_hash": "bb143f1afffc72e0",
       "symbols": [
         "ScreenShieldView",
+        "openPrompt",
+        "closePrompt",
         "submitPin",
         "triggerErrorShake"
       ],
-      "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with an obsidian privacy vignette and an Apple-grade biometric security card that cannot be unblurred until disarmed.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with an obsidian privacy vignette and an Apple-grade biometric security card that cannot be unblurred until disarmed.\nKey Symbols: ScreenShieldView, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with an obsidian privacy vignette\n//  and an Apple-grade biometric security card that cannot be unblurred until disarmed.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n\n    private var accentColor: Color {\n        if isAlarm { return PupilTheme.alarmRed }\n        if isTamper { return PupilTheme.warningAmber }\n        return Color.white.opacity(0.85)\n    }\n\n    private var cardBorderGradient: LinearGradient {\n        if isAlarm {\n            return LinearGradient(\n                colors: [PupilTheme.alarmRed.opacity(0.8), PupilTheme.alarmRed.opacity(0.25)],\n                startPoint: .topLeading,\n                endPoint: .bottomTrailing\n            )\n        }",
+      "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with an obsidian privacy vignette. When anything is clicked, opens a small native macOS UI window in the center of the screen requesting the password / PIN or Touch ID to unblur.",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with an obsidian privacy vignette. When anything is clicked, opens a small native macOS UI window in the center of the screen requesting the password / PIN or Touch ID to unblur.\nKey Symbols: ScreenShieldView, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with an obsidian privacy vignette.\n//  When anything is clicked, opens a small native macOS UI window in the center of the screen\n//  requesting the password / PIN or Touch ID to unblur.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @State private var isPromptPresented: Bool = false\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n\n    private var accentColor: Color {\n        if isAlarm { return PupilTheme.alarmRed }\n        if isTamper { return PupilTheme.warningAmber }\n        return Color.white.opacity(0.85)\n    }\n\n    private var cardBorderGradient: LinearGradient {\n        if isAlarm {\n            return LinearGradient(\n                colors: [PupilTheme.alarmRed.opacity(0.8), PupilTheme.alarmRed.opacity(0.25)],\n                startPoint: .topLeading,\n                endPoint: .bottomTrailing",
       "keywords": [
         "sources",
         "pupil",
@@ -1141,8 +1214,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::SettingsControls.swift",
       "file_path": "Sources/Pupil/Settings/SettingsControls.swift",
       "module_category": "System Settings Components & Vibrancy",
-      "line_count": 461,
-      "content_hash": "ed2437eac1a5d9a3",
+      "line_count": 465,
+      "content_hash": "481643d3de7d7c4c",
       "symbols": [
         "SettingsInfoButton",
         "SettingsRow",
@@ -1599,8 +1672,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 133,
-      "content_hash": "f479ff6533f40697",
+      "line_count": 142,
+      "content_hash": "ee73614835b08aa9",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
