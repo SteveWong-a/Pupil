@@ -1,0 +1,102 @@
+<h1 align="center">
+  <br>
+  Pupil
+  <br>
+</h1>
+
+<h3 align="center">Native macOS menu bar & notch security sentinel for solo study sessions</h3>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-black.svg" alt="MIT License">
+  <img src="https://img.shields.io/badge/macOS-15%2B-black.svg" alt="macOS 15+">
+  <img src="https://img.shields.io/badge/Swift_6-SwiftUI_%2B_AppKit-black.svg" alt="Swift 6">
+</p>
+
+**Pupil** is a native macOS security sentinel built in **Swift 6, SwiftUI, and AppKit**. Designed for students and solo workers in libraries or cafes, Pupil lives quietly in your macOS menu bar and MacBook notch—monitoring on-device iris gaze, MagSafe/USB-C power unplugs, and clamshell lid closures without any Electron or web wrapper bloat.
+
+---
+
+## Four Response Levels
+
+| Level | Trigger | Native macOS Response |
+| :--- | :--- | :--- |
+| **1. Armed Deterrence** | Armed from Menu Bar (`⌘A`) or Settings header | Menu bar glyph flips to `eye.slash.fill`; IOKit power and clamshell monitors arm |
+| **2. Gaze Warning** | Sustained gaze toward screen inside camera ROI (Apple `Vision` iris + head pose) | MacBook notch fluidly expands with a tracking eye (`PupilEyeVectorView`) and dwell meter |
+| **3. Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`) or screen locked | Notch expands with an amber countdown; inline Touch ID or Keychain PIN disarms |
+| **4. PIN-Latched Siren** | Clamshell lid closed (`AppleClamshellState`) or countdown expires | `IOPMAssertion` holds sleep while `AVAudioEngine` synthesizes a dual-tone siren until PIN/Touch ID disarm |
+
+---
+
+## Native macOS Architecture
+
+* **Dockless Menu Bar Agent (`NSApplication.ActivationPolicy.accessory`)**: Runs silently in `NSStatusBar.system` with zero Dock clutter. Opening **Settings… (`⌘,`)** reveals a native window and automatically returns to `.accessory` mode when closed.
+* **System Settings UI Craft**: Built with `NSVisualEffectView` (`.sidebar` vibrancy + saturation filter), unified transparent `NSToolbar`, progressive header blur (`ProgressiveHeaderBlur`), grouped translucent cards, and a floating bottom capsule tab bar with two-finger trackpad swipe navigation.
+* **Hardware Notch & Dynamic Island Overlay**: Uses a non-activating `NSPanel` at `CGShieldingWindowLevel() + 1` with concave top-corner flares (`NotchShape`) aligned to `NSScreen.auxiliaryTopLeftArea` / `auxiliaryTopRightArea`, falling back to a continuous-corner Dynamic Island pill on notchless displays.
+* **100% On-Device Apple Vision Pipeline**: Uses `VNDetectFaceRectanglesRequest` and `VNDetectFaceLandmarksRequest` (`leftPupil`, `rightPupil`, `leftEye`, `rightEye`, `yaw`, `pitch`) at a battery-friendly 10 FPS. Frames are processed strictly in memory and never written to disk.
+* **Keychain & Touch ID Security**: Disarm PINs are salted and SHA-256 hashed in the macOS Keychain (`Security` framework) alongside `LocalAuthentication` Touch ID verification.
+
+---
+
+## Building & Running
+
+### Requirements
+* macOS 15.0 (Sequoia) or later
+* Swift 6.0+
+
+### Quick Start
+
+```bash
+# Build and run tests
+swift build
+swift test
+
+# Bundle Pupil.app and launch with the Settings window open
+chmod +x scripts/bundle-app.sh
+./scripts/bundle-app.sh debug
+./dist/Pupil.app/Contents/MacOS/Pupil --open-settings
+```
+
+---
+
+## Repository Structure
+
+```
+Pupil/
+├── Package.swift
+├── scripts/
+│   └── bundle-app.sh
+├── Sources/Pupil/
+│   ├── PupilApp.swift                  # @main App, AppDelegate, NSStatusItem menu bar
+│   ├── Core/
+│   │   ├── SecurityCoordinator.swift   # State machine: DISARMED -> ARMING -> ARMED -> TAMPER -> ALARM
+│   │   ├── PowerAndLidMonitor.swift    # IOKit AC charger, AppleClamshellState & IOPMAssertion
+│   │   ├── LockMonitor.swift           # DistributedNotificationCenter lock/sleep/wake monitor
+│   │   ├── SirenSynthesizer.swift      # Zero-asset AVAudioEngine dual-tone alarm synthesizer
+│   │   └── KeychainManager.swift       # Salted SHA-256 Keychain PIN & Touch ID authentication
+│   ├── Vision/
+│   │   ├── CameraManager.swift         # AVFoundation 10 FPS capture session
+│   │   └── VisionGazeDetector.swift    # Apple Vision landmarks & GazeTemporalAggregator
+│   ├── NotchOverlay/
+│   │   ├── NotchGeometry.swift         # Hardware notch & Dynamic Island pill dimensions
+│   │   ├── NotchShape.swift            # Concave top-flare notch silhouette path
+│   │   ├── NotchWindow.swift           # Shielding-level borderless NSPanel
+│   │   ├── NotchOverlayView.swift      # Tracking PupilEyeVectorView & inline disarm UI
+│   │   └── NotchOverlayController.swift# Multi-display notch window lifecycle
+│   └── Settings/
+│       ├── PupilSettings.swift         # Observable UserDefaults preferences store
+│       ├── SettingsMetrics.swift       # Adaptive colors, typography & spacing tokens
+│       ├── SettingsControls.swift      # VisualEffectView, WindowConfigurator, SettingsGroup
+│       ├── SettingsTab.swift           # General, Gaze, Sensors, Alarm, About tabs
+│       ├── SettingsTabBar.swift        # Floating capsule tab bar with unfurling labels
+│       ├── ProgressiveHeaderBlur.swift # Layered material gradient header blur
+│       ├── HeaderStatusButton.swift    # Live security status & disarm popover pill
+│       ├── SettingsWindowView.swift    # Root settings scene with trackpad swipe support
+│       └── Pages/
+│           ├── GeneralSettingsPage.swift
+│           ├── GazeSettingsPage.swift
+│           ├── SensorsSettingsPage.swift
+│           ├── AlarmSettingsPage.swift
+│           └── AboutSettingsPage.swift
+└── Tests/PupilTests/
+    └── PupilSecurityTests.swift
+```
