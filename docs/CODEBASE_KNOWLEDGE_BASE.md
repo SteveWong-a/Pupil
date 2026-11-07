@@ -135,10 +135,10 @@ flowchart LR
 
 ### 4.8. Full-Screen Privacy Blur Shield (`ScreenShieldWindow.swift`, `ScreenShieldView.swift`, `ScreenShieldController.swift`)
 * **Unblurrable While Armed**: Pinned at `CGShieldingWindowLevel()` across all spaces and monitors. Intercepts all mouse events (`ignoresMouseEvents = false`) and blocks access to underlying applications.
-* **Frosted-Glass Blur & Obsidian Vignette**: Renders `NSVisualEffectView` with `.fullScreenUI` material and `.behindWindow` blending mode, darkening background windows with an obsidian radial vignette.
+* **Frosted-Glass Blur & Obsidian Vignette**: Renders `NSVisualEffectView` with `.fullScreenUI` material (`state: .active`) and `.behindWindow` blending mode, darkening background windows with an obsidian radial vignette.
 * **Multi-Display Coverage**: Dynamically creates and updates full-screen shielding windows for every screen in `NSScreen.screens` on display connect/disconnect.
-* **Central Biometric Card**: Displays tracking `PupilEyeVectorView`, live state headline, inline PIN SecureField, and Touch ID button. Clicks anywhere on the blurred background focus the PIN field and trigger biometric prompt.
-* **Zero Bypass Policy**: The window cannot be dismissed, bypassed, or unblurred until valid Keychain PIN or Touch ID verification transitions `SecurityCoordinator.state` back to `.disarmed`.
+* **On-Demand Native macOS UI Modal Window**: In normal armed/preview state, the screen is clean blur with no card permanently visible. Clicking anywhere or pressing any key summons an authentic macOS dialog in the center requesting the PIN/password with Touch ID option. Clicking outside or pressing Escape smoothly dismisses it back to clean blur. Tamper and alarm escalations automatically open the alert dialog.
+* **Zero Bypass Policy**: The screen cannot be dismissed, bypassed, or unblurred until valid Keychain PIN or Touch ID verification transitions `SecurityCoordinator.state` back to `.disarmed`.
 
 ### 4.9. Settings Design System (`SettingsControls.swift`, `SettingsMetrics.swift`, `SettingsTabBar.swift`, `ProgressiveHeaderBlur.swift`)
 * **Native Vibrancy**: `NSVisualEffectView` with `.sidebar` material and appearance-adaptive CIColorControls saturation filter (1.75 in light mode, 1.20 in dark mode).

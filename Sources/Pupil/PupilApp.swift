@@ -33,7 +33,6 @@ struct PupilApp: App {
         .defaultSize(SettingsMetrics.windowSize)
         .windowStyle(.hiddenTitleBar)
         .defaultPosition(.center)
-        .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
     }
 }
@@ -55,7 +54,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
@@ -82,8 +81,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
             self?.setMenuBarVisibility(visible)
         }
 
-        NSApp.setActivationPolicy(.accessory)
-
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(windowWillClose(_:)),
@@ -91,12 +88,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
             object: nil
         )
 
-        // Open Settings window on launch if --open-settings flag is passed
-        if CommandLine.arguments.contains("--open-settings") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+        // Reveal the Settings window immediately on launch unless launched silently
+        if !CommandLine.arguments.contains("--silent") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.revealSettingsWindow()
             }
+        } else {
+            NSApp.setActivationPolicy(.accessory)
         }
+    }
+
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        revealSettingsWindow()
+        return true
     }
 
     public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

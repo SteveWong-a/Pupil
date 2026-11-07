@@ -8,10 +8,8 @@ APP_BUNDLE="${DIST_DIR}/Pupil.app"
 DMG_PATH="${DIST_DIR}/Pupil.dmg"
 ZIP_PATH="${DIST_DIR}/Pupil.zip"
 
-echo "==> Ensuring Pupil.app is bundled..."
-if [[ ! -d "${APP_BUNDLE}" ]]; then
-    "${SCRIPT_DIR}/bundle-app.sh" release
-fi
+echo "==> Building and bundling Pupil.app (release)..."
+"${SCRIPT_DIR}/bundle-app.sh" release
 
 echo "==> Packaging Pupil.dmg (macOS Drag & Drop Installer)..."
 rm -f "${DMG_PATH}"
@@ -21,6 +19,9 @@ trap 'rm -rf "${DMG_STAGING}"' EXIT
 
 cp -R "${APP_BUNDLE}" "${DMG_STAGING}/Pupil.app"
 ln -s /Applications "${DMG_STAGING}/Applications"
+
+# Strip quarantine and extended attributes from staging
+xattr -cr "${DMG_STAGING}/Pupil.app" 2>/dev/null || true
 
 hdiutil create \
   -volname "Pupil Installer" \

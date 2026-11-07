@@ -43,7 +43,14 @@ Just like Glance, Pupil is packaged into a single standalone drag-and-drop macOS
 
 1. **Download**: Grab the latest **`Pupil.dmg`** from GitHub Releases (or generate it locally with `./scripts/build-dmg.sh`).
 2. **Install**: Open `Pupil.dmg` and drag **Pupil.app** into your `/Applications` folder.
-3. **Launch**: Open Pupil from Applications or Spotlight. It lives quietly in your menu bar (`⌘A` to arm, `⌘,` for Settings).
+3. **Launch**: Open Pupil from Applications, Launchpad, or Spotlight. The Control Center window opens immediately for configuration, and tucks into your menu bar when closed.
+
+> [!TIP]
+> If macOS Gatekeeper blocks opening on first launch because the app was downloaded without an Apple Developer ID notarization certificate, run:
+> ```bash
+> xattr -cr /Applications/Pupil.app
+> ```
+> Or Right-Click `Pupil.app` in `/Applications` $\rightarrow$ Open $\rightarrow$ Confirm "Open".
 
 ---
 

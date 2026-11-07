@@ -54,9 +54,7 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIconName</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
-    <string>15.0</string>
-    <key>LSUIElement</key>
-    <true/>
+    <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSCameraUsageDescription</key>
@@ -68,5 +66,4 @@ PLIST
 codesign --force --deep --sign - "${APP_BUNDLE}" >/dev/null 2>&1 || true
 
 echo "==> Successfully bundled: ${APP_BUNDLE}"
-echo "    Launch menu bar app: open \"${APP_BUNDLE}\""
-echo "    Launch with Settings open: \"${APP_BUNDLE}/Contents/MacOS/Pupil\" --open-settings"
+echo "    Launch app: open \"${APP_BUNDLE}\""
