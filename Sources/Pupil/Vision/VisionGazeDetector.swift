@@ -20,6 +20,8 @@ public struct GazeSample: Sendable, Equatable {
     public let pitchRadians: Float
     public let irisHorizontalRatio: Float
     public let trackingConfidence: Float
+    public let faceBoundingBoxes: [CGRect]
+    public let estimatedMetricDepthMeters: Float?
 
     public init(
         timestamp: TimeInterval,
@@ -30,7 +32,9 @@ public struct GazeSample: Sendable, Equatable {
         yawRadians: Float,
         pitchRadians: Float,
         irisHorizontalRatio: Float,
-        trackingConfidence: Float
+        trackingConfidence: Float,
+        faceBoundingBoxes: [CGRect] = [],
+        estimatedMetricDepthMeters: Float? = nil
     ) {
         self.timestamp = timestamp
         self.faceCount = faceCount
@@ -41,6 +45,8 @@ public struct GazeSample: Sendable, Equatable {
         self.pitchRadians = pitchRadians
         self.irisHorizontalRatio = irisHorizontalRatio
         self.trackingConfidence = trackingConfidence
+        self.faceBoundingBoxes = faceBoundingBoxes
+        self.estimatedMetricDepthMeters = estimatedMetricDepthMeters
     }
 
     public static func empty(at timestamp: TimeInterval = Date().timeIntervalSince1970) -> GazeSample {
@@ -53,7 +59,9 @@ public struct GazeSample: Sendable, Equatable {
             yawRadians: 0,
             pitchRadians: 0,
             irisHorizontalRatio: 0.5,
-            trackingConfidence: 0
+            trackingConfidence: 0,
+            faceBoundingBoxes: [],
+            estimatedMetricDepthMeters: nil
         )
     }
 }
@@ -180,6 +188,8 @@ nonisolated public enum VisionGazeDetector {
         try handler.perform([landmarksRequest])
 
         let landmarkObservations = landmarksRequest.results ?? []
+        let imageSize = CGSize(width: image.width, height: image.height)
+        let allBoundingBoxes = faceObservations.map(\.boundingBox)
 
         // Score all detected faces inside ROI and pick the strongest candidate
         var bestSample: GazeSample?
@@ -197,6 +207,7 @@ nonisolated public enum VisionGazeDetector {
 
             let landmarks = landmarkObservations.indices.contains(index) ? landmarkObservations[index].landmarks : nil
             let irisRatio = computeHorizontalIrisRatio(landmarks: landmarks)
+            let depthZ0 = estimateMetricDepthMeters(landmarks: landmarks, imageSize: imageSize)
 
             // Compute composite toward-screen gaze score from head pose + iris centering
             let yawPenalty = min(1.0, abs(yaw) / 0.65)
@@ -216,7 +227,9 @@ nonisolated public enum VisionGazeDetector {
                 yawRadians: yaw,
                 pitchRadians: pitch,
                 irisHorizontalRatio: irisRatio,
-                trackingConfidence: obs.confidence
+                trackingConfidence: obs.confidence,
+                faceBoundingBoxes: allBoundingBoxes,
+                estimatedMetricDepthMeters: depthZ0
             )
 
             if let currentBest = bestSample {
@@ -256,5 +269,34 @@ nonisolated public enum VisionGazeDetector {
         case let (nil, r?): return r
         case (nil, nil): return 0.5
         }
+    }
+
+    /// Computes initial metric depth anchor Z_0 = (f_px * 0.063) / d_px using inter-pupillary pixel distance
+    /// (human average IPD ≈ 0.063 m).
+    public static func estimateMetricDepthMeters(
+        landmarks: VNFaceLandmarks2D?,
+        imageSize: CGSize,
+        nominalFocalLengthAt640Px: Float = 560.0
+    ) -> Float? {
+        guard let landmarks,
+              let leftPupil = landmarks.leftPupil,
+              let rightPupil = landmarks.rightPupil else {
+            return nil
+        }
+        let leftPts = leftPupil.pointsInImage(imageSize: imageSize)
+        let rightPts = rightPupil.pointsInImage(imageSize: imageSize)
+        guard let pL = leftPts.first, let pR = rightPts.first else {
+            return nil
+        }
+        let dx = Float(pR.x - pL.x)
+        let dy = Float(pR.y - pL.y)
+        let dPx = sqrt(dx * dx + dy * dy)
+        guard dPx > 4.0 else { return nil }
+
+        let scale = Float(max(1.0, imageSize.width) / 640.0)
+        let fPx = nominalFocalLengthAt640Px * scale
+        let ipdMeters: Float = 0.063
+        let z0 = (fPx * ipdMeters) / dPx
+        return max(0.15, min(3.5, z0))
     }
 }

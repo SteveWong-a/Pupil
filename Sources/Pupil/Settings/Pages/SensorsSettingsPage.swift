@@ -47,6 +47,29 @@ public struct SensorsSettingsPage: View {
                 ) {
                     PupilToggle(isOn: $settings.holdSleepOnLidClose)
                 }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Spatial Motion / Lift Detection",
+                    subtitle: "Detects open-lid grab & walk via Apple Vision upper-background registration when unplugged.",
+                    info: "Tracks static upper-background ceiling/wall anchors at 10 FPS and ignores brief < 0.5s desk bumps."
+                ) {
+                    PupilToggle(isOn: Binding(
+                        get: { settings.isSpatialMotionEnabled },
+                        set: { enabled in
+                            settings.isSpatialMotionEnabled = enabled
+                            coordinator.syncCameraLifecycle()
+                        }
+                    ))
+                }
+                if settings.isSpatialMotionEnabled {
+                    SettingsGroupDivider()
+                    SettingsOptionSliderRowContent(
+                        title: "Motion sensitivity",
+                        stepLabels: SpatialMotionSensitivity.allCases.map(\.title),
+                        index: $settings.spatialMotionSensitivityIndex,
+                        stopCount: SpatialMotionSensitivity.allCases.count
+                    )
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -71,6 +94,17 @@ public struct SensorsSettingsPage: View {
                         icon: coordinator.powerMonitor.isSleepAssertionActive ? "bolt.shield.fill" : "moon.zzz",
                         tint: coordinator.powerMonitor.isSleepAssertionActive ? PupilTheme.accent : SettingsMetrics.textSecondary,
                         value: coordinator.powerMonitor.isSleepAssertionActive ? "Active" : "Idle"
+                    )
+                    SettingsGroupDivider()
+                    sensorReadoutRow(
+                        title: "Spatial lift sentry",
+                        icon: settings.isSpatialMotionEnabled ? "gyroscope" : "xmark.circle",
+                        tint: settings.isSpatialMotionEnabled
+                            ? (coordinator.state == .armed ? PupilTheme.armedGreen : PupilTheme.accent)
+                            : SettingsMetrics.textSecondary,
+                        value: settings.isSpatialMotionEnabled
+                            ? (coordinator.state == .armed ? "Armed (\(settings.spatialMotionSensitivity.title))" : "Ready (\(settings.spatialMotionSensitivity.title))")
+                            : "Off"
                     )
                 }
             }

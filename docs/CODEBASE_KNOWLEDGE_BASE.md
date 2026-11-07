@@ -25,7 +25,7 @@ flowchart TD
     ARMED -->|Sustained Gaze >= 2.0s inside ROI| GW["GAZE WARNING (Notch Drops Minimal Dark Pill)"]
     GW -->|Subject Looks Away or 4.5s Timeout| ARMED
     
-    ARMED -->|Charger Unplugged or Screen Locked| TP["TAMPER PENDING (Grace Countdown: 5-30s)"]
+    ARMED -->|Charger Unplugged, Spatial Lift >1.2s, or Screen Locked| TP["TAMPER PENDING (Grace Countdown: 5-30s)"]
     TP -->|Valid PIN or Touch ID| D
     TP -->|Countdown Expires| ALARM["ALARM LATCHED (Audible Siren + Sleep Block)"]
     
@@ -35,9 +35,9 @@ flowchart TD
 
 | Tier | Name | Triggers | Native System Response |
 | :--- | :--- | :--- | :--- |
-| **Tier 1** | **Armed Deterrence** | User arms via `⌘A`, Menu Bar, or Settings header | Menu bar glyph switches to template aperture; IOKit hardware power polling and clamshell monitor arm. |
+| **Tier 1** | **Armed Deterrence** | User arms via `⌘A`, Menu Bar, or Settings header | Menu bar glyph switches to template aperture; IOKit hardware power polling, clamshell monitor, and Vision spatial lift anchor arm. |
 | **Tier 2** | **Gaze Warning** | Face detected in camera ROI with sustained gaze toward screen ($\ge 2.0\text{s}$) | Hardware notch subtly widens with a minimal dark pill status indicator (or logs silently). |
-| **Tier 3** | **Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`) or screen locked | Notch expands with amber countdown pill; enables keyboard focus for inline PIN or Touch ID biometric disarm. |
+| **Tier 3** | **Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`), sustained spatial lift/occlusion ($> 1.2\text{s}$), or screen locked | Notch expands with amber countdown pill; enables keyboard focus for inline PIN or Touch ID biometric disarm. |
 | **Tier 4** | **PIN-Latched Siren** | Clamshell lid closed (`AppleClamshellState`), system wake while armed, or countdown expiry | Acquires `IOPMAssertion` to prevent sleep; `AVAudioEngine` synthesizes alternating 880Hz/660Hz square waves until valid PIN or Touch ID disarm. |
 
 ---
@@ -159,6 +159,7 @@ flowchart LR
 | `Sources/Pupil/Core/SirenSynthesizer.swift` | Real-time Two-Tone Alarm Synthesizer | `SirenSynthesizer` |
 | `Sources/Pupil/Core/KeychainManager.swift` | Salted SHA-256 PIN & Touch ID Store | `KeychainManager`, `KeychainError` |
 | `Sources/Pupil/Vision/VisionGazeDetector.swift` | Apple Vision Landmark & Dwell Detector | `VisionGazeDetector`, `GazeSample`, `GazeDwellSnapshot`, `GazeTemporalAggregator` |
+| `Sources/Pupil/Vision/VisionMotionDetector.swift` | Apple Vision Spatial Lift & Motion Detector | `VisionMotionDetector`, `MotionSample`, `MotionEscalationSnapshot`, `MotionTemporalAggregator` |
 | `Sources/Pupil/Vision/CameraManager.swift` | AVFoundation 10 FPS Frame Ingestion | `CameraManager`, `CameraDeviceInfo` |
 | `Sources/Pupil/NotchOverlay/NotchGeometry.swift` | Hardware Notch & Pill Dimensions | `NotchGeometry`, `NotchPanelStyle` |
 | `Sources/Pupil/NotchOverlay/NotchShape.swift` | Concave Corner Notch Silhouette Path | `NotchShape` |

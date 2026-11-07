@@ -2,8 +2,8 @@
   "repository": "Pupil",
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
-  "total_indexed_files": 35,
-  "total_source_lines": 5993,
+  "total_indexed_files": 36,
+  "total_source_lines": 6816,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -42,8 +42,8 @@
       "triggerTamper",
       "enterAlarm",
       "ingestGazeSample",
-      "simulateGazeWarning",
-      "previewScreenShield"
+      "ingestMotionSample",
+      "simulateGazeWarning"
     ],
     "Sources/Pupil/Core/PowerAndLidMonitor.swift": [
       "PowerHardwareEvent",
@@ -92,7 +92,22 @@
       "ingest",
       "analyzeFrame",
       "computeHorizontalIrisRatio",
-      "ratioForEye"
+      "ratioForEye",
+      "estimateMetricDepthMeters"
+    ],
+    "Sources/Pupil/Vision/VisionMotionDetector.swift": [
+      "MotionSample",
+      "MotionEscalationSnapshot",
+      "MotionTemporalAggregator",
+      "VisionMotionDetector",
+      "anchor",
+      "reset",
+      "ingest",
+      "resetAnchor",
+      "analyzeFrame",
+      "makeFaceMaskedUpperBackgroundCrop",
+      "computeRegistrationDisplacement",
+      "computeFrameLuminanceStats"
     ],
     "Sources/Pupil/Vision/CameraManager.swift": [
       "CameraDeviceInfo",
@@ -100,6 +115,7 @@
       "refreshCameras",
       "requestCameraAccess",
       "startCapture",
+      "resetMotionAnchor",
       "stopCapture",
       "configureAndStartSession",
       "captureOutput"
@@ -162,6 +178,7 @@
     "Sources/Pupil/Settings/PupilSettings.swift": [
       "GazeSensitivity",
       "NotchDeterrentStyle",
+      "SpatialMotionSensitivity",
       "HardwareTrigger",
       "CameraROI",
       "PupilSettings",
@@ -264,7 +281,11 @@
       "testGazeDwellAggregator",
       "testSecurityCoordinatorLifecycle",
       "testScreenShieldAndBlurSettings",
-      "testNotchDeterrentStyleOptions"
+      "testNotchDeterrentStyleOptions",
+      "testTableBumpMotionSpikeSuppressed",
+      "testSustainedSpatialLiftEscalationAndDisarmReset",
+      "testWebcamOcclusionAndVisionMotionDetector",
+      "makeSyntheticFrame"
     ]
   },
   "embeddings_chunks": [
@@ -437,8 +458,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 459,
-      "content_hash": "9a0138aa45c40a0c",
+      "line_count": 513,
+      "content_hash": "95d70441cf310215",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -454,11 +475,11 @@
         "triggerTamper",
         "enterAlarm",
         "ingestGazeSample",
-        "simulateGazeWarning",
-        "previewScreenShield"
+        "ingestMotionSample",
+        "simulateGazeWarning"
       ],
       "summary": "SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM",
-      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, performValidatedDisarm, triggerTamper, enterAlarm, ingestGazeSample, simulateGazeWarning, previewScreenShield\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
+      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, performValidatedDisarm, triggerTamper, enterAlarm, ingestGazeSample, ingestMotionSample, simulateGazeWarning\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
       "keywords": [
         "sources",
         "pupil",
@@ -672,8 +693,8 @@
       "chunk_id": "pupil::Sources::Pupil::Vision::VisionGazeDetector.swift",
       "file_path": "Sources/Pupil/Vision/VisionGazeDetector.swift",
       "module_category": "Apple Vision Gaze & Iris Estimation",
-      "line_count": 260,
-      "content_hash": "371e2c8ed7b1bbf1",
+      "line_count": 302,
+      "content_hash": "dc6b2d8fe03d576c",
       "symbols": [
         "GazeSample",
         "GazeDwellSnapshot",
@@ -684,10 +705,11 @@
         "ingest",
         "analyzeFrame",
         "computeHorizontalIrisRatio",
-        "ratioForEye"
+        "ratioForEye",
+        "estimateMetricDepthMeters"
       ],
       "summary": "VisionGazeDetector.swift Pupil On-device Apple Vision iris & head-pose gaze estimator + temporal dwell aggregator. Processes frames strictly in memory on the Apple Neural Engine (ANE); zero images are saved.",
-      "semantic_text": "File: Sources/Pupil/Vision/VisionGazeDetector.swift\nModule: Apple Vision Gaze & Iris Estimation\nSummary: VisionGazeDetector.swift Pupil On-device Apple Vision iris & head-pose gaze estimator + temporal dwell aggregator. Processes frames strictly in memory on the Apple Neural Engine (ANE); zero images are saved.\nKey Symbols: GazeSample, GazeDwellSnapshot, GazeTemporalAggregator, VisionGazeDetector, empty, reset, ingest, analyzeFrame, computeHorizontalIrisRatio, ratioForEye\nContent Sample:\n//\n//  VisionGazeDetector.swift\n//  Pupil\n//\n//  On-device Apple Vision iris & head-pose gaze estimator + temporal dwell aggregator.\n//  Processes frames strictly in memory on the Apple Neural Engine (ANE); zero images are saved.\n//\n\nimport CoreGraphics\nimport Foundation\nimport Vision\n\npublic struct GazeSample: Sendable, Equatable {\n    public let timestamp: TimeInterval\n    public let faceCount: Int\n    public let faceInsideROI: Bool\n    public let faceCentroid: CGPoint?\n    public let towardScreenScore: Float\n    public let yawRadians: Float\n    public let pitchRadians: Float\n    public let irisHorizontalRatio: Float\n    public let trackingConfidence: Float\n\n    public init(\n        timestamp: TimeInterval,\n        faceCount: Int,\n        faceInsideROI: Bool,\n        faceCentroid: CGPoint?,\n        towardScreenScore: Float,\n        yawRadians: Float,\n        pitchRadians: Float,\n        irisHorizontalRatio: Float,\n        trackingConfidence: Float\n    ) {\n        self.timestamp = timestamp\n        self.faceCount = faceCount\n        self.faceInsideROI = faceInsideROI\n        self.faceCentroid = faceCentroid\n        self.towardScreenScore = towardScreenScore\n        self.yawRadians = yawRadians",
+      "semantic_text": "File: Sources/Pupil/Vision/VisionGazeDetector.swift\nModule: Apple Vision Gaze & Iris Estimation\nSummary: VisionGazeDetector.swift Pupil On-device Apple Vision iris & head-pose gaze estimator + temporal dwell aggregator. Processes frames strictly in memory on the Apple Neural Engine (ANE); zero images are saved.\nKey Symbols: GazeSample, GazeDwellSnapshot, GazeTemporalAggregator, VisionGazeDetector, empty, reset, ingest, analyzeFrame, computeHorizontalIrisRatio, ratioForEye, estimateMetricDepthMeters\nContent Sample:\n//\n//  VisionGazeDetector.swift\n//  Pupil\n//\n//  On-device Apple Vision iris & head-pose gaze estimator + temporal dwell aggregator.\n//  Processes frames strictly in memory on the Apple Neural Engine (ANE); zero images are saved.\n//\n\nimport CoreGraphics\nimport Foundation\nimport Vision\n\npublic struct GazeSample: Sendable, Equatable {\n    public let timestamp: TimeInterval\n    public let faceCount: Int\n    public let faceInsideROI: Bool\n    public let faceCentroid: CGPoint?\n    public let towardScreenScore: Float\n    public let yawRadians: Float\n    public let pitchRadians: Float\n    public let irisHorizontalRatio: Float\n    public let trackingConfidence: Float\n    public let faceBoundingBoxes: [CGRect]\n    public let estimatedMetricDepthMeters: Float?\n\n    public init(\n        timestamp: TimeInterval,\n        faceCount: Int,\n        faceInsideROI: Bool,\n        faceCentroid: CGPoint?,\n        towardScreenScore: Float,\n        yawRadians: Float,\n        pitchRadians: Float,\n        irisHorizontalRatio: Float,\n        trackingConfidence: Float,\n        faceBoundingBoxes: [CGRect] = [],\n        estimatedMetricDepthMeters: Float? = nil\n    ) {\n        self.timestamp = timestamp\n        self.faceCount = faceCount",
       "keywords": [
         "sources",
         "pupil",
@@ -717,23 +739,74 @@
       ]
     },
     {
+      "chunk_id": "pupil::Sources::Pupil::Vision::VisionMotionDetector.swift",
+      "file_path": "Sources/Pupil/Vision/VisionMotionDetector.swift",
+      "module_category": "General",
+      "line_count": 455,
+      "content_hash": "5ff2c0e327f0a66f",
+      "symbols": [
+        "MotionSample",
+        "MotionEscalationSnapshot",
+        "MotionTemporalAggregator",
+        "VisionMotionDetector",
+        "anchor",
+        "reset",
+        "ingest",
+        "resetAnchor",
+        "analyzeFrame",
+        "makeFaceMaskedUpperBackgroundCrop",
+        "computeRegistrationDisplacement",
+        "computeFrameLuminanceStats"
+      ],
+      "summary": "VisionMotionDetector.swift Pupil Zero-dependency Apple Vision Spatial Lift & Motion Detector (\"Lift & Walk\" Trigger). Closes the \"Unplugged Open-Lid Grab & Walk\" blindspot when armed on battery power. Processes frames strictly in memory; zero images or crops are written to disk.",
+      "semantic_text": "File: Sources/Pupil/Vision/VisionMotionDetector.swift\nModule: General\nSummary: VisionMotionDetector.swift Pupil Zero-dependency Apple Vision Spatial Lift & Motion Detector (\"Lift & Walk\" Trigger). Closes the \"Unplugged Open-Lid Grab & Walk\" blindspot when armed on battery power. Processes frames strictly in memory; zero images or crops are written to disk.\nKey Symbols: MotionSample, MotionEscalationSnapshot, MotionTemporalAggregator, VisionMotionDetector, anchor, reset, ingest, resetAnchor, analyzeFrame, makeFaceMaskedUpperBackgroundCrop, computeRegistrationDisplacement, computeFrameLuminanceStats\nContent Sample:\n//\n//  VisionMotionDetector.swift\n//  Pupil\n//\n//  Zero-dependency Apple Vision Spatial Lift & Motion Detector (\"Lift & Walk\" Trigger).\n//  Closes the \"Unplugged Open-Lid Grab & Walk\" blindspot when armed on battery power.\n//  Processes frames strictly in memory; zero images or crops are written to disk.\n//\n\nimport Accelerate\nimport CoreGraphics\nimport Foundation\nimport Vision\nimport simd\n\npublic struct MotionSample: Sendable, Equatable {\n    public let timestamp: TimeInterval\n    /// Normalized global background translation magnitude ||\u0394t|| (fraction of frame width).\n    public let translationMagnitude: Float\n    /// Frobenius deviation ||H - I||_F of upper-background homography warp.\n    public let homographyWarpMagnitude: Float\n    /// Full-frame mean luminance in [0, 1].\n    public let meanLuminance: Float\n    /// Full-frame luminance variance in [0, 1].\n    public let luminanceVariance: Float\n    /// Optional metric depth anchor Z_0 in meters from inter-pupillary distance.\n    public let metricDepthZ0: Float?\n    /// Whether this frame was captured as the initial Frame 0 anchor.\n    public let isAnchorFrame: Bool\n\n    public init(\n        timestamp: TimeInterval,\n        translationMagnitude: Float,\n        homographyWarpMagnitude: Float = 0,\n        meanLuminance: Float = 0.45,\n        luminanceVariance: Float = 0.04,\n        metricDepthZ0: Float? = nil,\n        isAnchorFrame: Bool = false\n    ) {\n        self.timestamp = timestamp",
+      "keywords": [
+        "sources",
+        "pupil",
+        "vision",
+        "visionmotiondetector",
+        "swift",
+        "general",
+        "visionmotiondetector",
+        "swift",
+        "pupil",
+        "zero",
+        "dependency",
+        "apple",
+        "vision",
+        "spatial",
+        "lift",
+        "motion",
+        "detector",
+        "lift",
+        "walk",
+        "trigger",
+        "closes",
+        "unplugged",
+        "open",
+        "lid",
+        "grab"
+      ]
+    },
+    {
       "chunk_id": "pupil::Sources::Pupil::Vision::CameraManager.swift",
       "file_path": "Sources/Pupil/Vision/CameraManager.swift",
       "module_category": "AVFoundation 10 FPS Camera Capture",
-      "line_count": 165,
-      "content_hash": "36aa6f0ac27313ce",
+      "line_count": 179,
+      "content_hash": "26e556516b8d8666",
       "symbols": [
         "CameraDeviceInfo",
         "CameraManager",
         "refreshCameras",
         "requestCameraAccess",
         "startCapture",
+        "resetMotionAnchor",
         "stopCapture",
         "configureAndStartSession",
         "captureOutput"
       ],
       "summary": "CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.",
-      "semantic_text": "File: Sources/Pupil/Vision/CameraManager.swift\nModule: AVFoundation 10 FPS Camera Capture\nSummary: CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.\nKey Symbols: CameraDeviceInfo, CameraManager, refreshCameras, requestCameraAccess, startCapture, stopCapture, configureAndStartSession, captureOutput\nContent Sample:\n//\n//  CameraManager.swift\n//  Pupil\n//\n//  AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS\n//  for real-time Vision gaze analysis. Never writes frames to disk.\n//\n\n@preconcurrency import AVFoundation\nimport CoreGraphics\n@preconcurrency import CoreImage\nimport Foundation\nimport Observation\n\npublic struct CameraDeviceInfo: Identifiable, Equatable, Sendable {\n    public let id: String\n    public let name: String\n    public let isBuiltIn: Bool\n}\n\n@MainActor\n@Observable\npublic final class CameraManager: NSObject {\n    public private(set) var availableCameras: [CameraDeviceInfo] = []\n    public private(set) var authorizationStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)\n    public private(set) var isRunning: Bool = false\n    public private(set) var lastFrameImage: CGImage?\n\n    public var onGazeSample: ((GazeSample) -> Void)?\n\n    @ObservationIgnored private nonisolated(unsafe) let captureSession = AVCaptureSession()\n    @ObservationIgnored private let sessionQueue = DispatchQueue(label: \"com.pupil.camera.session\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: \"com.pupil.camera.output\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])\n    @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0\n\n    public override init() {\n        super.init()\n        refreshCameras()\n    }",
+      "semantic_text": "File: Sources/Pupil/Vision/CameraManager.swift\nModule: AVFoundation 10 FPS Camera Capture\nSummary: CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.\nKey Symbols: CameraDeviceInfo, CameraManager, refreshCameras, requestCameraAccess, startCapture, resetMotionAnchor, stopCapture, configureAndStartSession, captureOutput\nContent Sample:\n//\n//  CameraManager.swift\n//  Pupil\n//\n//  AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS\n//  for real-time Vision gaze analysis. Never writes frames to disk.\n//\n\n@preconcurrency import AVFoundation\nimport CoreGraphics\n@preconcurrency import CoreImage\nimport Foundation\nimport Observation\n\npublic struct CameraDeviceInfo: Identifiable, Equatable, Sendable {\n    public let id: String\n    public let name: String\n    public let isBuiltIn: Bool\n}\n\n@MainActor\n@Observable\npublic final class CameraManager: NSObject {\n    public private(set) var availableCameras: [CameraDeviceInfo] = []\n    public private(set) var authorizationStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)\n    public private(set) var isRunning: Bool = false\n    public private(set) var lastFrameImage: CGImage?\n\n    public var onGazeSample: ((GazeSample) -> Void)?\n    public var onMotionSample: ((MotionSample) -> Void)?\n\n    @ObservationIgnored private nonisolated(unsafe) let captureSession = AVCaptureSession()\n    @ObservationIgnored private let sessionQueue = DispatchQueue(label: \"com.pupil.camera.session\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: \"com.pupil.camera.output\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])\n    @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0\n    @ObservationIgnored public nonisolated let motionDetector = VisionMotionDetector()\n\n    public override init() {\n        super.init()",
       "keywords": [
         "sources",
         "pupil",
@@ -1142,11 +1215,12 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::PupilSettings.swift",
       "file_path": "Sources/Pupil/Settings/PupilSettings.swift",
       "module_category": "Observable Settings Store",
-      "line_count": 305,
-      "content_hash": "99a0919e06f3bd71",
+      "line_count": 373,
+      "content_hash": "9bb97f5ff4347726",
       "symbols": [
         "GazeSensitivity",
         "NotchDeterrentStyle",
+        "SpatialMotionSensitivity",
         "HardwareTrigger",
         "CameraROI",
         "PupilSettings",
@@ -1155,7 +1229,7 @@
         "bindMenuBarVisibility"
       ],
       "summary": "PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.",
-      "semantic_text": "File: Sources/Pupil/Settings/PupilSettings.swift\nModule: Observable Settings Store\nSummary: PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\nKey Symbols: GazeSensitivity, NotchDeterrentStyle, HardwareTrigger, CameraROI, PupilSettings, Keys, contains, bindMenuBarVisibility\nContent Sample:\n//\n//  PupilSettings.swift\n//  Pupil\n//\n//  Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\n//\n\nimport Foundation\nimport Observation\nimport SwiftUI\n\npublic enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendable {\n    case relaxed\n    case balanced\n    case strict\n\n    public var id: String { rawValue }\n\n    public var title: String {\n        switch self {\n        case .relaxed: return \"Relaxed\"\n        case .balanced: return \"Default\"\n        case .strict: return \"Strict\"\n        }\n    }\n\n    public var subtitle: String {\n        switch self {\n        case .relaxed: return \"Direct frontal gaze only.\"\n        case .balanced: return \"Balanced detection cone.\"\n        case .strict: return \"Wide peripheral detection cone.\"\n        }\n    }\n\n    public var scoreThreshold: Float {\n        switch self {\n        case .relaxed: return 0.75\n        case .balanced: return 0.65\n        case .strict: return 0.52\n        }",
+      "semantic_text": "File: Sources/Pupil/Settings/PupilSettings.swift\nModule: Observable Settings Store\nSummary: PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\nKey Symbols: GazeSensitivity, NotchDeterrentStyle, SpatialMotionSensitivity, HardwareTrigger, CameraROI, PupilSettings, Keys, contains, bindMenuBarVisibility\nContent Sample:\n//\n//  PupilSettings.swift\n//  Pupil\n//\n//  Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\n//\n\nimport Foundation\nimport Observation\nimport SwiftUI\n\npublic enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendable {\n    case relaxed\n    case balanced\n    case strict\n\n    public var id: String { rawValue }\n\n    public var title: String {\n        switch self {\n        case .relaxed: return \"Relaxed\"\n        case .balanced: return \"Default\"\n        case .strict: return \"Strict\"\n        }\n    }\n\n    public var subtitle: String {\n        switch self {\n        case .relaxed: return \"Direct frontal gaze only.\"\n        case .balanced: return \"Balanced detection cone.\"\n        case .strict: return \"Wide peripheral detection cone.\"\n        }\n    }\n\n    public var scoreThreshold: Float {\n        switch self {\n        case .relaxed: return 0.75\n        case .balanced: return 0.65\n        case .strict: return 0.52\n        }",
       "keywords": [
         "sources",
         "pupil",
@@ -1178,10 +1252,10 @@
         "glancesettings",
         "gazesensitivity",
         "notchdeterrentstyle",
+        "spatialmotionsensitivity",
         "hardwaretrigger",
         "cameraroi",
-        "pupilsettings",
-        "keys"
+        "pupilsettings"
       ]
     },
     {
@@ -1578,8 +1652,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::SensorsSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/SensorsSettingsPage.swift",
       "module_category": "Hardware Sensors & Relay Settings Page",
-      "line_count": 121,
-      "content_hash": "a7dccbacc9056bd6",
+      "line_count": 155,
+      "content_hash": "6cb48afd037952b9",
       "symbols": [
         "SensorsSettingsPage",
         "toggleTrigger",
@@ -1692,18 +1766,22 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 142,
-      "content_hash": "ee73614835b08aa9",
+      "line_count": 298,
+      "content_hash": "a8357746272fe472",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
         "testGazeDwellAggregator",
         "testSecurityCoordinatorLifecycle",
         "testScreenShieldAndBlurSettings",
-        "testNotchDeterrentStyleOptions"
+        "testNotchDeterrentStyleOptions",
+        "testTableBumpMotionSpikeSuppressed",
+        "testSustainedSpatialLiftEscalationAndDisarmReset",
+        "testWebcamOcclusionAndVisionMotionDetector",
+        "makeSyntheticFrame"
       ],
       "summary": "Module implementing PupilSecurityTests.swift",
-      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testNotchDeterrentStyleOptions\nContent Sample:\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(\n            timestamp: baseTime + 0.9,",
+      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
       "keywords": [
         "tests",
         "pupiltests",
@@ -1722,7 +1800,11 @@
         "testgazedwellaggregator",
         "testsecuritycoordinatorlifecycle",
         "testscreenshieldandblursettings",
-        "testnotchdeterrentstyleoptions"
+        "testnotchdeterrentstyleoptions",
+        "testtablebumpmotionspikesuppressed",
+        "testsustainedspatialliftescalationanddisarmreset",
+        "testwebcamocclusionandvisionmotiondetector",
+        "makesyntheticframe"
       ]
     }
   ]

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import Pupil
@@ -138,5 +139,160 @@ struct PupilSecurityTests {
 
         let settings = PupilSettings.shared
         #expect(settings.notchStyle == .minimalPill || settings.notchStyle == .silent)
+    }
+
+    @Test("Brief < 0.5s table-bump motion spikes do NOT trigger tamper escalation")
+    @MainActor
+    func testTableBumpMotionSpikeSuppressed() throws {
+        try KeychainManager.enrollPin("1357")
+        let coordinator = SecurityCoordinator()
+        coordinator.settings.isSpatialMotionEnabled = true
+        coordinator.settings.spatialMotionSensitivity = .medium
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+
+        let t0: TimeInterval = 2000.0
+        // Frame 0: Anchor captured at arming
+        coordinator.ingestMotionSample(.anchor(at: t0, metricDepthZ0: 0.60))
+        #expect(coordinator.hasMotionAnchor == true)
+        #expect(coordinator.state == .armed)
+
+        // Transient table bump at t+0.10s and t+0.35s (< 0.5s duration)
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 0.10,
+            translationMagnitude: 0.12,
+            homographyWarpMagnitude: 0.25
+        ))
+        #expect(coordinator.state == .armed)
+
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 0.35,
+            translationMagnitude: 0.11,
+            homographyWarpMagnitude: 0.22
+        ))
+        #expect(coordinator.state == .armed)
+
+        // Settles back to stationary at t+0.45s
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 0.45,
+            translationMagnitude: 0.005,
+            homographyWarpMagnitude: 0.01
+        ))
+        #expect(coordinator.state == .armed)
+        #expect(coordinator.continuousMotionSeconds == 0)
+
+        _ = coordinator.disarmWithPin("1357")
+    }
+
+    @Test("Sustained > 1.2s motion displacement while ARMED transitions SecurityCoordinator to tamper countdown and resets on PIN disarm")
+    @MainActor
+    func testSustainedSpatialLiftEscalationAndDisarmReset() throws {
+        try KeychainManager.enrollPin("8642")
+        let coordinator = SecurityCoordinator()
+        coordinator.settings.isSpatialMotionEnabled = true
+        coordinator.settings.spatialMotionSensitivity = .medium
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+
+        let t0: TimeInterval = 3000.0
+        // Capture Frame 0 anchor with metric depth Z_0 = 0.62m
+        coordinator.ingestMotionSample(.anchor(at: t0, metricDepthZ0: 0.62))
+        #expect(coordinator.hasMotionAnchor == true)
+        #expect(coordinator.motionAnchorDepthMeters == 0.62)
+
+        // Start lifting laptop at t+0.1s
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 0.10,
+            translationMagnitude: 0.095,
+            homographyWarpMagnitude: 0.20
+        ))
+        #expect(coordinator.state == .armed)
+
+        // Sustained lift at t+0.8s (0.7s elapsed, still <= 1.2s)
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 0.80,
+            translationMagnitude: 0.105,
+            homographyWarpMagnitude: 0.24
+        ))
+        #expect(coordinator.state == .armed)
+
+        // Sustained lift at t+1.45s (1.35s continuous displacement > 1.2s threshold) -> Tamper Countdown!
+        coordinator.ingestMotionSample(MotionSample(
+            timestamp: t0 + 1.45,
+            translationMagnitude: 0.115,
+            homographyWarpMagnitude: 0.28
+        ))
+        #expect(coordinator.state == .tamperPending)
+        #expect(coordinator.activeTamperSource == .cameraMotionDetected)
+        #expect(coordinator.activeTamperSource == .spatialLiftDetected)
+
+        // Disarming with a valid PIN resets the motion detector anchor state
+        #expect(coordinator.disarmWithPin("8642") == true)
+        #expect(coordinator.state == .disarmed)
+        #expect(coordinator.hasMotionAnchor == false)
+        #expect(coordinator.continuousMotionSeconds == 0)
+        #expect(coordinator.latestMotionDisplacementScore == 0)
+        #expect(coordinator.motionAnchorDepthMeters == nil)
+        #expect(coordinator.cameraManager.motionDetector.hasAnchorFrame == false)
+    }
+
+    @Test("Sustained > 1.2s webcam occlusion triggers tamper escalation and VisionMotionDetector processes frames in memory")
+    @MainActor
+    func testWebcamOcclusionAndVisionMotionDetector() throws {
+        var aggregator = MotionTemporalAggregator()
+        let t0: TimeInterval = 4000.0
+
+        _ = aggregator.ingest(.anchor(at: t0))
+        // Occluded frame at t+0.1s (mean luminance & variance near zero)
+        let s1 = aggregator.ingest(MotionSample(
+            timestamp: t0 + 0.10,
+            translationMagnitude: 0,
+            meanLuminance: 0.01,
+            luminanceVariance: 0.0001
+        ))
+        #expect(s1.isTamperTriggered == false)
+
+        // Occluded continuously for 1.3s (> 1.2s)
+        let s2 = aggregator.ingest(MotionSample(
+            timestamp: t0 + 1.45,
+            translationMagnitude: 0,
+            meanLuminance: 0.01,
+            luminanceVariance: 0.0001
+        ))
+        #expect(s2.isSustainedOcclusionDetected == true)
+        #expect(s2.isTamperTriggered == true)
+
+        // Verify VisionMotionDetector anchor lifecycle with synthetic in-memory CGImage frames
+        let detector = VisionMotionDetector()
+        #expect(detector.hasAnchorFrame == false)
+        if let testImage = Self.makeSyntheticFrame(width: 64, height: 48, lumaByte: 120) {
+            let anchorSample = detector.analyzeFrame(testImage, metricDepthZ0: 0.58, timestamp: t0)
+            #expect(anchorSample.isAnchorFrame == true)
+            #expect(detector.hasAnchorFrame == true)
+            #expect(detector.currentAnchorDepthZ0 == 0.58)
+
+            let nextSample = detector.analyzeFrame(testImage, timestamp: t0 + 0.1)
+            #expect(nextSample.isAnchorFrame == false)
+
+            detector.resetAnchor()
+            #expect(detector.hasAnchorFrame == false)
+        }
+    }
+
+    private static func makeSyntheticFrame(width: Int, height: Int, lumaByte: UInt8) -> CGImage? {
+        var pixels = [UInt8](repeating: lumaByte, count: width * height * 4)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: &pixels,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return nil
+        }
+        return ctx.makeImage()
     }
 }

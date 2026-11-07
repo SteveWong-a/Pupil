@@ -27,12 +27,14 @@ public final class CameraManager: NSObject {
     public private(set) var lastFrameImage: CGImage?
 
     public var onGazeSample: ((GazeSample) -> Void)?
+    public var onMotionSample: ((MotionSample) -> Void)?
 
     @ObservationIgnored private nonisolated(unsafe) let captureSession = AVCaptureSession()
     @ObservationIgnored private let sessionQueue = DispatchQueue(label: "com.pupil.camera.session", qos: .userInitiated)
     @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: "com.pupil.camera.output", qos: .userInitiated)
     @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0
+    @ObservationIgnored public nonisolated let motionDetector = VisionMotionDetector()
 
     public override init() {
         super.init()
@@ -84,10 +86,15 @@ public final class CameraManager: NSObject {
         }
     }
 
+    public nonisolated func resetMotionAnchor() {
+        motionDetector.resetAnchor()
+    }
+
     public func stopCapture() {
         guard isRunning else { return }
         isRunning = false
         lastFrameImage = nil
+        motionDetector.resetAnchor()
         sessionQueue.async { [weak self] in
             guard let self else { return }
             if self.captureSession.isRunning {
@@ -155,11 +162,18 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
 
         let sample = (try? VisionGazeDetector.analyzeFrame(cgImage, roi: .default, timestamp: now)) ?? .empty(at: now)
+        let motionSample = motionDetector.analyzeFrame(
+            cgImage,
+            faceBoundingBoxes: sample.faceBoundingBoxes,
+            metricDepthZ0: sample.estimatedMetricDepthMeters,
+            timestamp: now
+        )
 
         Task { @MainActor [weak self] in
             guard let self, self.isRunning else { return }
             self.lastFrameImage = cgImage
             self.onGazeSample?(sample)
+            self.onMotionSample?(motionSample)
         }
     }
 }

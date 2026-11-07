@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Swift_6-SwiftUI_%2B_AppKit-black.svg" alt="Swift 6">
 </p>
 
-**Pupil** is a native macOS security sentinel built in **Swift 6, SwiftUI, and AppKit**. Designed for students and solo workers in libraries or cafes, Pupil lives quietly in your macOS menu bar and MacBook notch—monitoring on-device iris gaze, MagSafe/USB-C power unplugs, and clamshell lid closures without any Electron or web wrapper bloat.
+**Pupil** is a native macOS security sentinel built in **Swift 6, SwiftUI, and AppKit**. Designed for students and solo workers in libraries or cafes, Pupil lives quietly in your macOS menu bar and MacBook notch—monitoring on-device iris gaze, MagSafe/USB-C power unplugs, spatial camera lift & displacement (for open-lid grab & walk attacks on battery), and clamshell lid closures without any Electron or web wrapper bloat.
 
 ---
 
@@ -20,9 +20,9 @@
 
 | Level | Trigger | Native macOS Response |
 | :--- | :--- | :--- |
-| **1. Armed Deterrence** | Armed from Menu Bar (`⌘A`) or Settings header | Menu bar glyph flips to `eye.slash.fill`; IOKit power and clamshell monitors arm |
+| **1. Armed Deterrence** | Armed from Menu Bar (`⌘A`) or Settings header | Menu bar glyph flips to `eye.slash.fill`; IOKit power, clamshell, and Vision spatial lift anchor arm |
 | **2. Gaze Warning** | Sustained gaze toward screen inside camera ROI (Apple `Vision` iris + head pose) | MacBook notch subtly widens with a minimal dark pill status indicator |
-| **3. Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`) or screen locked | Notch expands with an amber countdown; inline Touch ID or Keychain PIN disarms |
+| **3. Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`), sustained spatial lift/occlusion ($> 1.2\text{s}$), or screen locked | Notch expands with an amber countdown; inline Touch ID or Keychain PIN disarms |
 | **4. PIN-Latched Siren** | Clamshell lid closed (`AppleClamshellState`) or countdown expires | `IOPMAssertion` holds sleep while `AVAudioEngine` synthesizes a dual-tone siren until PIN/Touch ID disarm |
 
 ---
@@ -32,7 +32,12 @@
 * **Dockless Menu Bar Agent (`NSApplication.ActivationPolicy.accessory`)**: Runs silently in `NSStatusBar.system` with zero Dock clutter. Opening **Settings… (`⌘,`)** reveals a native window and automatically returns to `.accessory` mode when closed.
 * **System Settings UI Craft**: Built with `NSVisualEffectView` (`.sidebar` vibrancy + saturation filter), unified transparent `NSToolbar`, progressive header blur (`ProgressiveHeaderBlur`), grouped translucent cards, and a floating bottom capsule tab bar with two-finger trackpad swipe navigation.
 * **Hardware Notch & Dynamic Island Overlay**: Uses a non-activating `NSPanel` at `CGShieldingWindowLevel() + 1` with concave top-corner flares (`NotchShape`) aligned to `NSScreen.auxiliaryTopLeftArea` / `auxiliaryTopRightArea`, falling back to a continuous-corner Dynamic Island pill on notchless displays.
-* **100% On-Device Apple Vision Pipeline**: Uses `VNDetectFaceRectanglesRequest` and `VNDetectFaceLandmarksRequest` (`leftPupil`, `rightPupil`, `leftEye`, `rightEye`, `yaw`, `pitch`) at a battery-friendly 10 FPS. Frames are processed strictly in memory and never written to disk.
+* **Zero-Dependency Native Vision & Spatial Lift Detector**:
+  * **Iris & Gaze Dwell**: `VNDetectFaceRectanglesRequest` and `VNDetectFaceLandmarksRequest` (`leftPupil`, `rightPupil`, `leftEye`, `rightEye`, `yaw`, `pitch`) at a battery-friendly 10 FPS.
+  * **Spatial Lift & Walk Sentry**: Closes the "Unplugged Open-Lid Grab & Walk" theft blindspot on battery power by capturing a Frame 0 reference anchor and metric depth scale $Z_0$ via inter-pupillary distance.
+  * **Face-Masked Upper-Background Registration**: Focuses registration on the static top 25% ROI (ceiling/upper walls) while masking out moving face regions, measuring global translation $\|\Delta \mathbf{t}\|$ and homography warp using `VNTranslationalImageRegistrationRequest` and `VNHomographicImageRegistrationRequest`.
+  * **Table-Bump Rejection & Lens Occlusion Protection**: Suppresses transient $< 0.5\text{s}$ desk bumps while escalating continuous displacement or lens occlusion (mean luminance and variance near zero) lasting $> 1.2\text{s}$ to the tamper countdown.
+  * **100% On-Device Privacy**: All frame processing remains strictly transient in memory—zero frames, crops, or landmarks are ever saved to disk or transmitted over the network.
 * **Keychain & Touch ID Security**: Disarm PINs are salted and SHA-256 hashed in the macOS Keychain (`Security` framework) alongside `LocalAuthentication` Touch ID verification.
 
 ---
@@ -93,7 +98,8 @@ Pupil/
 │   │   └── KeychainManager.swift       # Salted SHA-256 Keychain PIN & Touch ID authentication
 │   ├── Vision/
 │   │   ├── CameraManager.swift         # AVFoundation 10 FPS capture session
-│   │   └── VisionGazeDetector.swift    # Apple Vision landmarks & GazeTemporalAggregator
+│   │   ├── VisionGazeDetector.swift    # Apple Vision landmarks & GazeTemporalAggregator
+│   │   └── VisionMotionDetector.swift  # Apple Vision upper-background registration & lift sentry
 │   ├── NotchOverlay/
 │   │   ├── NotchGeometry.swift         # Hardware notch & Dynamic Island pill dimensions
 │   │   ├── NotchShape.swift            # Concave top-flare notch silhouette path

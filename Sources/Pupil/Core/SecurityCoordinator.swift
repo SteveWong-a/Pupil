@@ -43,7 +43,10 @@ public enum TamperSource: String, Codable, Sendable {
     case lidClosed = "Clamshell Lid Closed"
     case screenLocked = "Screen Locked"
     case wakeWhileArmed = "System Woke While Armed"
+    case cameraMotionDetected = "Spatial Lift / Motion Detected"
     case manualTest = "Simulated Tamper Test"
+
+    public static let spatialLiftDetected: TamperSource = .cameraMotionDetected
 }
 
 public struct SecurityEventRecord: Identifiable, Codable, Sendable, Equatable {
@@ -82,6 +85,10 @@ public final class SecurityCoordinator {
     public private(set) var latestGazeScore: Float = 0
     public private(set) var eyeLookOffset: CGPoint = .zero
     public private(set) var activeFaceCount: Int = 0
+    public private(set) var hasMotionAnchor: Bool = false
+    public private(set) var latestMotionDisplacementScore: Float = 0
+    public private(set) var continuousMotionSeconds: Double = 0
+    public private(set) var motionAnchorDepthMeters: Float?
     public private(set) var events: [SecurityEventRecord] = []
     public private(set) var hasEnrolledPin: Bool = KeychainManager.hasEnrolledPin
     public private(set) var isCameraPreviewRequested: Bool = false
@@ -96,6 +103,7 @@ public final class SecurityCoordinator {
     public var onNotchUpdateNeeded: (() -> Void)?
 
     private var gazeAggregator = GazeTemporalAggregator()
+    private var motionAggregator = MotionTemporalAggregator()
     private var countdownTimer: Timer?
     private var gazeWarningDismissWorkItem: DispatchWorkItem?
 
@@ -136,6 +144,12 @@ public final class SecurityCoordinator {
     public func startArming(immediate: Bool = false) {
         guard state == .disarmed else { return }
         gazeAggregator.reset()
+        motionAggregator.reset()
+        cameraManager.resetMotionAnchor()
+        hasMotionAnchor = false
+        latestMotionDisplacementScore = 0
+        continuousMotionSeconds = 0
+        motionAnchorDepthMeters = nil
         isGazeWarningActive = false
         gazeDwellProgress = 0
         activeTamperSource = nil
@@ -165,8 +179,21 @@ public final class SecurityCoordinator {
         countdownTimer?.invalidate()
         countdownTimer = nil
         countdownSecondsRemaining = 0
+        motionAggregator.reset()
+        cameraManager.resetMotionAnchor()
+        hasMotionAnchor = false
+        latestMotionDisplacementScore = 0
+        continuousMotionSeconds = 0
+        motionAnchorDepthMeters = nil
         state = .armed
-        let acNote = powerMonitor.isOnACPower ? "AC power connected (unplug armed)." : "Armed on battery."
+        let acNote: String
+        if powerMonitor.isOnACPower {
+            acNote = "AC power connected (unplug armed)."
+        } else if settings.isSpatialMotionEnabled {
+            acNote = "Armed on battery (Spatial Lift Detection active)."
+        } else {
+            acNote = "Armed on battery."
+        }
         logEvent("System Armed", detail: "Monitoring active. \(acNote)")
         syncCameraLifecycle()
         onStateChanged?(state)
@@ -220,6 +247,12 @@ public final class SecurityCoordinator {
         isShieldPreviewActive = false
         gazeDwellProgress = 0
         gazeAggregator.reset()
+        motionAggregator.reset()
+        cameraManager.resetMotionAnchor()
+        hasMotionAnchor = false
+        latestMotionDisplacementScore = 0
+        continuousMotionSeconds = 0
+        motionAnchorDepthMeters = nil
         syncCameraLifecycle()
 
         logEvent("Disarmed", detail: "Session disarmed via \(method).")
@@ -303,6 +336,23 @@ public final class SecurityCoordinator {
         }
     }
 
+    public func ingestMotionSample(_ sample: MotionSample) {
+        guard state == .armed, settings.isSpatialMotionEnabled else { return }
+
+        let snapshot = motionAggregator.ingest(
+            sample,
+            sensitivity: settings.spatialMotionSensitivity
+        )
+        hasMotionAnchor = snapshot.hasCapturedAnchor
+        latestMotionDisplacementScore = snapshot.effectiveDisplacementScore
+        continuousMotionSeconds = max(snapshot.continuousDisplacementSeconds, snapshot.continuousOcclusionSeconds)
+        motionAnchorDepthMeters = snapshot.anchorDepthMeters
+
+        if snapshot.isTamperTriggered {
+            triggerTamper(source: .cameraMotionDetected, immediateAlarm: false)
+        }
+    }
+
     public func simulateGazeWarning() {
         if state == .disarmed {
             startArming(immediate: true)
@@ -364,7 +414,7 @@ public final class SecurityCoordinator {
     }
 
     public func syncCameraLifecycle() {
-        let shouldRunCamera = isCameraPreviewRequested || (isMonitoring && settings.gazeDetectionEnabled)
+        let shouldRunCamera = isCameraPreviewRequested || (isMonitoring && (settings.gazeDetectionEnabled || settings.isSpatialMotionEnabled))
         if shouldRunCamera {
             cameraManager.startCapture(preferredDeviceID: settings.preferredCameraID)
         } else {
@@ -422,6 +472,10 @@ public final class SecurityCoordinator {
 
         cameraManager.onGazeSample = { [weak self] sample in
             self?.ingestGazeSample(sample)
+        }
+
+        cameraManager.onMotionSample = { [weak self] sample in
+            self?.ingestMotionSample(sample)
         }
     }
 

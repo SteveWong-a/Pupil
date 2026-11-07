@@ -28,6 +28,7 @@ TARGET_FILES = [
     "Sources/Pupil/Core/SirenSynthesizer.swift",
     "Sources/Pupil/Core/KeychainManager.swift",
     "Sources/Pupil/Vision/VisionGazeDetector.swift",
+    "Sources/Pupil/Vision/VisionMotionDetector.swift",
     "Sources/Pupil/Vision/CameraManager.swift",
     "Sources/Pupil/NotchOverlay/NotchGeometry.swift",
     "Sources/Pupil/NotchOverlay/NotchShape.swift",

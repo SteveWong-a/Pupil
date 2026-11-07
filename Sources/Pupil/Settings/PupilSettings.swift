@@ -70,6 +70,48 @@ public enum NotchDeterrentStyle: String, CaseIterable, Identifiable, Codable, Se
     }
 }
 
+public enum SpatialMotionSensitivity: String, CaseIterable, Identifiable, Codable, Sendable {
+    case low
+    case medium
+    case high
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .low: return "Low"
+        case .medium: return "Medium"
+        case .high: return "High"
+        }
+    }
+
+    public var subtitle: String {
+        switch self {
+        case .low: return "Large camera displacement required (ignores heavy desk vibration)."
+        case .medium: return "Balanced lift & walk detection deadband."
+        case .high: return "Strict spatial lock; detects subtle laptop tilt or lift."
+        }
+    }
+
+    /// Normalized translation deadband threshold ||Δt|| (fraction of frame width).
+    public var translationDeadband: Float {
+        switch self {
+        case .low: return 0.065
+        case .medium: return 0.040
+        case .high: return 0.022
+        }
+    }
+
+    /// Homography warp Frobenius norm deadband threshold.
+    public var warpDeadband: Float {
+        switch self {
+        case .low: return 0.22
+        case .medium: return 0.14
+        case .high: return 0.08
+        }
+    }
+}
+
 public enum HardwareTrigger: String, CaseIterable, Identifiable, Codable, Hashable, Sendable {
     case chargerUnplug
     case lidClose
@@ -158,6 +200,14 @@ public final class PupilSettings {
         didSet { defaults.set(holdSleepOnLidClose, forKey: Keys.holdSleepOnLidClose) }
     }
 
+    public var isSpatialMotionEnabled: Bool {
+        didSet { defaults.set(isSpatialMotionEnabled, forKey: Keys.isSpatialMotionEnabled) }
+    }
+
+    public var spatialMotionSensitivity: SpatialMotionSensitivity {
+        didSet { defaults.set(spatialMotionSensitivity.rawValue, forKey: Keys.spatialMotionSensitivity) }
+    }
+
     public var blurBackgroundWhenArmed: Bool {
         didSet { defaults.set(blurBackgroundWhenArmed, forKey: Keys.blurBackgroundWhenArmed) }
     }
@@ -235,6 +285,15 @@ public final class PupilSettings {
         }
     }
 
+    public var spatialMotionSensitivityIndex: Double {
+        get { Double(SpatialMotionSensitivity.allCases.firstIndex(of: spatialMotionSensitivity) ?? 1) }
+        set {
+            let cases = SpatialMotionSensitivity.allCases
+            let idx = max(0, min(cases.count - 1, Int(newValue.rounded())))
+            spatialMotionSensitivity = cases[idx]
+        }
+    }
+
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.showsInMenuBar = defaults.object(forKey: Keys.showsInMenuBar) as? Bool ?? true
@@ -261,6 +320,13 @@ public final class PupilSettings {
             self.hardwareTriggers = Set(HardwareTrigger.allCases)
         }
         self.holdSleepOnLidClose = defaults.object(forKey: Keys.holdSleepOnLidClose) as? Bool ?? true
+        self.isSpatialMotionEnabled = defaults.object(forKey: Keys.isSpatialMotionEnabled) as? Bool ?? true
+        if let rawMotionSens = defaults.string(forKey: Keys.spatialMotionSensitivity),
+           let motionSens = SpatialMotionSensitivity(rawValue: rawMotionSens) {
+            self.spatialMotionSensitivity = motionSens
+        } else {
+            self.spatialMotionSensitivity = .medium
+        }
         self.blurBackgroundWhenArmed = defaults.object(forKey: Keys.blurBackgroundWhenArmed) as? Bool ?? true
         self.allowTouchIDDisarm = defaults.object(forKey: Keys.allowTouchIDDisarm) as? Bool ?? true
         self.hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
@@ -292,6 +358,8 @@ public final class PupilSettings {
         static let notchStyle = "pupil.notchStyle"
         static let hardwareTriggers = "pupil.hardwareTriggers"
         static let holdSleepOnLidClose = "pupil.holdSleepOnLidClose"
+        static let isSpatialMotionEnabled = "pupil.isSpatialMotionEnabled"
+        static let spatialMotionSensitivity = "pupil.spatialMotionSensitivity"
         static let blurBackgroundWhenArmed = "pupil.blurBackgroundWhenArmed"
         static let allowTouchIDDisarm = "pupil.allowTouchIDDisarm"
         static let hapticFeedbackEnabled = "pupil.hapticFeedbackEnabled"
