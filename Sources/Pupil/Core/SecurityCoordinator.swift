@@ -97,6 +97,7 @@ public final class SecurityCoordinator {
 
     private var armedGlobalInputMonitor: Any?
     private var armedLocalInputMonitor: Any?
+    private var armedInputPollingTimer: Timer?
 
     public let settings: PupilSettings
     public let powerMonitor: PowerAndLidMonitor
@@ -309,6 +310,22 @@ public final class SecurityCoordinator {
             }
             return event
         }
+
+        // Lightweight 10Hz CoreGraphics event source sentinel:
+        // Catches any hardware key press or trackpad/mouse click system-wide across all apps and Spaces
+        armedInputPollingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.state == .armed, !self.isInteractiveUnlockRequested else { return }
+                let keyElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
+                let leftElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .leftMouseDown)
+                let rightElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .rightMouseDown)
+                let otherElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .otherMouseDown)
+
+                if keyElapsed < 0.15 || leftElapsed < 0.15 || rightElapsed < 0.15 || otherElapsed < 0.15 {
+                    self.handleArmedUserInput()
+                }
+            }
+        }
     }
 
     private func stopArmedInputMonitoring() {
@@ -320,6 +337,8 @@ public final class SecurityCoordinator {
             NSEvent.removeMonitor(monitor)
             armedLocalInputMonitor = nil
         }
+        armedInputPollingTimer?.invalidate()
+        armedInputPollingTimer = nil
     }
 
     public func handleArmedUserInput() {
@@ -414,10 +433,10 @@ public final class SecurityCoordinator {
             if !isGazeWarningActive {
                 activateGazeWarning(simulated: false)
             } else {
-                scheduleGazeWarningDismissal(delaySeconds: 1.5)
+                scheduleGazeWarningDismissal(delaySeconds: 1.2)
             }
         } else if isGazeWarningActive && snapshot.elapsedDwellSeconds == 0 {
-            scheduleGazeWarningDismissal(delaySeconds: 0.8)
+            scheduleGazeWarningDismissal(delaySeconds: 0.35)
         }
     }
 
@@ -483,6 +502,7 @@ public final class SecurityCoordinator {
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         }
         onNotchUpdateNeeded?()
+        NotificationCenter.default.post(name: .screenShieldSync, object: nil)
 
         scheduleGazeWarningDismissal(delaySeconds: 3.0)
     }
@@ -495,6 +515,7 @@ public final class SecurityCoordinator {
         gazeDwellProgress = 0
         gazeAggregator.reset()
         onNotchUpdateNeeded?()
+        NotificationCenter.default.post(name: .screenShieldSync, object: nil)
     }
 
     private func scheduleGazeWarningDismissal(delaySeconds: Double) {

@@ -65,3 +65,4 @@ If you discover a security vulnerability or potential privacy leak in Pupil:
 1. Please do **NOT** open a public GitHub issue.
 2. Email a detailed description and reproduction steps directly to **Steve Wong** via GitHub or security contact.
 3. Include your macOS version, hardware architecture (e.g., Apple Silicon M1/M2/M3/M4), and steps to reproduce.
+

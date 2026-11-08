@@ -160,6 +160,22 @@ struct PupilSecurityTests {
         #expect(coordinator.state == .disarmed)
         #expect(coordinator.isInteractiveUnlockRequested == false)
 
+        // Verify Case 1: Gaze triggers privacy blur while armed, and looking away clears it
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+        #expect(coordinator.isGazeWarningActive == false)
+
+        coordinator.simulateGazeWarning()
+        #expect(coordinator.isGazeWarningActive == true)
+        shieldController.syncWithCoordinator()
+
+        coordinator.dismissGazeWarning()
+        #expect(coordinator.isGazeWarningActive == false)
+        shieldController.syncWithCoordinator()
+
+        #expect(coordinator.disarmWithPin("2468") == true)
+        #expect(coordinator.state == .disarmed)
+
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: true)
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: false)
 

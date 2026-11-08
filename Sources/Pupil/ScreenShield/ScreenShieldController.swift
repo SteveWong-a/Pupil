@@ -52,10 +52,9 @@ public final class ScreenShieldController {
     public func syncWithCoordinator() {
         guard let coordinator else { return }
         let isTamperOrAlarm = (coordinator.state == .tamperPending || coordinator.state == .alarm)
-        let isArmedBlur = (coordinator.state == .armed && coordinator.settings.blurBackgroundWhenArmed)
         let isGazePrivacyBlur = (coordinator.state == .armed && coordinator.isGazeWarningActive && coordinator.settings.blurScreenOnGaze)
         let isInputUnlockChallenge = (coordinator.state == .armed && coordinator.isInteractiveUnlockRequested)
-        let shouldShow = coordinator.isShieldPreviewActive || isTamperOrAlarm || isArmedBlur || isGazePrivacyBlur || isInputUnlockChallenge
+        let shouldShow = coordinator.isShieldPreviewActive || isTamperOrAlarm || isGazePrivacyBlur || isInputUnlockChallenge
 
         if shouldShow {
             showShield()

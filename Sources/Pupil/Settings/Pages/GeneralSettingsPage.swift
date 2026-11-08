@@ -57,13 +57,6 @@ public struct GeneralSettingsPage: View {
                     PupilToggle(isOn: $settings.allowTouchIDDisarm)
                 }
                 SettingsGroupDivider()
-                SettingsRowContent(
-                    title: "Continuous blur while armed",
-                    info: "Keep the screen frosted continuously as soon as the system is armed (unblur by entering PIN or Touch ID)."
-                ) {
-                    PupilToggle(isOn: $settings.blurBackgroundWhenArmed)
-                }
-                SettingsGroupDivider()
                 displayPickerRow
             }
             .onAppear {
