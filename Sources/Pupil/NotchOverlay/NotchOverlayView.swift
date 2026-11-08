@@ -324,6 +324,12 @@ public struct NotchOverlayView: View {
             .frame(width: Self.minimalSideWidth)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if coordinator.state == .armed {
+                coordinator.handleArmedUserInput()
+            }
+        }
     }
 
     @ViewBuilder

@@ -93,6 +93,10 @@ public final class SecurityCoordinator {
     public private(set) var hasEnrolledPin: Bool = KeychainManager.hasEnrolledPin
     public private(set) var isCameraPreviewRequested: Bool = false
     public private(set) var isShieldPreviewActive: Bool = false
+    public private(set) var isInteractiveUnlockRequested: Bool = false
+
+    private var armedGlobalInputMonitor: Any?
+    private var armedLocalInputMonitor: Any?
 
     public let settings: PupilSettings
     public let powerMonitor: PowerAndLidMonitor
@@ -186,6 +190,8 @@ public final class SecurityCoordinator {
         continuousMotionSeconds = 0
         motionAnchorDepthMeters = nil
         state = .armed
+        isInteractiveUnlockRequested = false
+        startArmedInputMonitoring()
         let acNote: String
         if powerMonitor.isOnACPower {
             acNote = "AC power connected (unplug armed)."
@@ -225,6 +231,8 @@ public final class SecurityCoordinator {
     /// Allows canceling during the initial `ARMING` exit-delay without requiring a PIN.
     public func cancelArmingDuringExitDelay() {
         guard state == .arming else { return }
+        stopArmedInputMonitoring()
+        isInteractiveUnlockRequested = false
         performValidatedDisarm(method: "Exit Delay Cancel")
     }
 
@@ -245,6 +253,8 @@ public final class SecurityCoordinator {
         activeTamperSource = nil
         isGazeWarningActive = false
         isShieldPreviewActive = false
+        isInteractiveUnlockRequested = false
+        stopArmedInputMonitoring()
         gazeDwellProgress = 0
         gazeAggregator.reset()
         motionAggregator.reset()
@@ -258,6 +268,57 @@ public final class SecurityCoordinator {
         logEvent("Disarmed", detail: "Session disarmed via \(method).")
         onStateChanged?(state)
         onNotchUpdateNeeded?()
+    }
+
+    // MARK: - Armed User Input Monitoring
+
+    private func startArmedInputMonitoring() {
+        stopArmedInputMonitoring()
+
+        armedGlobalInputMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handleArmedUserInput()
+            }
+        }
+
+        armedLocalInputMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]
+        ) { [weak self] event in
+            Task { @MainActor [weak self] in
+                self?.handleArmedUserInput()
+            }
+            return event
+        }
+    }
+
+    private func stopArmedInputMonitoring() {
+        if let monitor = armedGlobalInputMonitor {
+            NSEvent.removeMonitor(monitor)
+            armedGlobalInputMonitor = nil
+        }
+        if let monitor = armedLocalInputMonitor {
+            NSEvent.removeMonitor(monitor)
+            armedLocalInputMonitor = nil
+        }
+    }
+
+    public func handleArmedUserInput() {
+        guard state == .armed else { return }
+        guard !isInteractiveUnlockRequested else { return }
+        isInteractiveUnlockRequested = true
+        logEvent("Armed Input Detected", detail: "Keyboard or mouse interaction detected. Screen locked with PIN / Touch ID challenge.")
+        onStateChanged?(state)
+        onNotchUpdateNeeded?()
+        NotificationCenter.default.post(name: .screenShieldSync, object: nil)
+        NotificationCenter.default.post(name: .screenShieldOpenPrompt, object: nil)
+
+        if settings.allowTouchIDDisarm {
+            Task { @MainActor [weak self] in
+                _ = await self?.disarmWithTouchID()
+            }
+        }
     }
 
     // MARK: - Tamper & Alarm Escalation

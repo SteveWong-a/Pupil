@@ -142,6 +142,22 @@ struct PupilSecurityTests {
         #expect(Notification.Name.screenShieldFocusPrimary.rawValue == "PupilScreenShieldFocusPrimary")
         #expect(Notification.Name.screenShieldSync.rawValue == "PupilScreenShieldSync")
         #expect(Notification.Name.screenShieldAnyKeyPressed.rawValue == "PupilScreenShieldAnyKeyPressed")
+        #expect(Notification.Name.screenShieldInputDetected.rawValue == "PupilScreenShieldInputDetected")
+
+        // Verify armed user input triggers interactive unlock challenge and shield activation
+        try? KeychainManager.enrollPin("2468")
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+        #expect(coordinator.isInteractiveUnlockRequested == false)
+
+        coordinator.handleArmedUserInput()
+        #expect(coordinator.isInteractiveUnlockRequested == true)
+        shieldController.syncWithCoordinator()
+
+        // Disarm with PIN clears interactive challenge and resets state
+        #expect(coordinator.disarmWithPin("2468") == true)
+        #expect(coordinator.state == .disarmed)
+        #expect(coordinator.isInteractiveUnlockRequested == false)
 
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: true)
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: false)

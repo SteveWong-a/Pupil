@@ -18,6 +18,7 @@ extension Notification.Name {
     public static let screenShieldFocusPrimary = Notification.Name("PupilScreenShieldFocusPrimary")
     public static let screenShieldSync = Notification.Name("PupilScreenShieldSync")
     public static let screenShieldAnyKeyPressed = Notification.Name("PupilScreenShieldAnyKeyPressed")
+    public static let screenShieldInputDetected = Notification.Name("PupilScreenShieldInputDetected")
 }
 
 public final class ScreenShieldWindow: NSPanel {
@@ -47,7 +48,8 @@ public final class ScreenShieldWindow: NSPanel {
     public override var canBecomeMain: Bool { true }
 
     public override func sendEvent(_ event: NSEvent) {
-        if event.type == .leftMouseDown || event.type == .rightMouseDown {
+        if event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown {
+            NotificationCenter.default.post(name: .screenShieldInputDetected, object: nil)
             NSApp.activate(ignoringOtherApps: true)
             makeKeyAndOrderFront(nil)
         }
@@ -60,6 +62,7 @@ public final class ScreenShieldWindow: NSPanel {
             return
         }
         NotificationCenter.default.post(name: .screenShieldAnyKeyPressed, object: nil)
+        NotificationCenter.default.post(name: .screenShieldInputDetected, object: nil)
         if event.keyCode == 51 || event.keyCode == 117 { // Delete (Backspace) / Forward Delete
             NotificationCenter.default.post(name: .screenShieldDeleteKey, object: nil)
             return

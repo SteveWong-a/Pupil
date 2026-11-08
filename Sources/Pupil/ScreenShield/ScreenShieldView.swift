@@ -29,35 +29,41 @@ public struct ScreenShieldView: View {
     private var isGazePrivacyOnly: Bool {
         coordinator.state == .armed &&
         !coordinator.settings.blurBackgroundWhenArmed &&
+        !coordinator.isInteractiveUnlockRequested &&
         coordinator.isGazeWarningActive &&
         coordinator.settings.blurScreenOnGaze
     }
 
     public var body: some View {
         ZStack {
-            // 1. Native behind-window frosted glass blur (always active while armed)
-            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)
+            // 1. Deep frosted privacy scrim: high-opacity obsidian base that completely blocks screen snooping
+            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.95)
                 .ignoresSafeArea()
 
-            // 2. Subtle privacy vignette
+            // 2. Native frosted glass material layer for macOS vibrancy and glass depth
+            VisualEffectView(material: .fullScreenUI, blendingMode: .withinWindow, state: .active)
+                .ignoresSafeArea()
+                .opacity(0.85)
+
+            // 3. Deep radial privacy vignette
             RadialGradient(
                 colors: [
-                    Color.black.opacity(0.32),
-                    Color.black.opacity(0.68)
+                    Color.black.opacity(0.35),
+                    Color.black.opacity(0.82)
                 ],
                 center: .center,
-                startRadius: 220,
-                endRadius: 920
+                startRadius: 180,
+                endRadius: 900
             )
             .ignoresSafeArea()
 
-            // 3. Click layer: clicking background refocuses the PIN prompt or dismisses transient gaze privacy blur
+            // 4. Click layer: clicking background refocuses the PIN prompt or triggers interactive unlock
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if isGazePrivacyOnly {
-                        coordinator.dismissGazeWarning()
+                    if coordinator.state == .armed && !coordinator.isInteractiveUnlockRequested {
+                        coordinator.handleArmedUserInput()
                     } else if isPrimary {
                         isPinFocused = true
                     } else {
@@ -65,7 +71,7 @@ public struct ScreenShieldView: View {
                     }
                 }
 
-            // 4. Centered modal dialog or transient gaze privacy capsule
+            // 5. Centered modal dialog or transient gaze privacy capsule
             if isPrimary && isPromptPresented {
                 if isGazePrivacyOnly {
                     gazePrivacyCapsule
@@ -121,9 +127,14 @@ public struct ScreenShieldView: View {
                 hasError = false
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .screenShieldAnyKeyPressed)) { _ in
-            if isGazePrivacyOnly {
-                coordinator.dismissGazeWarning()
+        .onReceive(NotificationCenter.default.publisher(for: .screenShieldInputDetected)) { _ in
+            if coordinator.state == .armed && !coordinator.isInteractiveUnlockRequested {
+                coordinator.handleArmedUserInput()
+            }
+        }
+        .onChange(of: coordinator.isInteractiveUnlockRequested) { _, requested in
+            if requested && isPrimary {
+                openPrompt()
             }
         }
     }
@@ -153,11 +164,11 @@ public struct ScreenShieldView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.white)
 
-                Text("Screen obscured while gaze is detected.\nLook away or tap any key to reveal.")
+                Text("Screen obscured while gaze is detected.\nLook away to dismiss, or press any key / click to unlock.")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.white.opacity(0.65))
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 260)
+                    .frame(maxWidth: 270)
             }
         }
         .padding(24)
@@ -400,6 +411,11 @@ public struct ScreenShieldView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             isPinFocused = true
+        }
+        if coordinator.settings.allowTouchIDDisarm && !isGazePrivacyOnly {
+            Task {
+                _ = await coordinator.disarmWithTouchID()
+            }
         }
     }
 

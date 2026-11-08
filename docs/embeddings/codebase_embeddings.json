@@ -3,7 +3,7 @@
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
   "total_indexed_files": 36,
-  "total_source_lines": 7164,
+  "total_source_lines": 7267,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -39,11 +39,11 @@
       "cancelArmingDuringExitDelay",
       "updatePin",
       "performValidatedDisarm",
+      "startArmedInputMonitoring",
+      "stopArmedInputMonitoring",
+      "handleArmedUserInput",
       "triggerTamper",
-      "enterAlarm",
-      "ingestGazeSample",
-      "ingestMotionSample",
-      "simulateGazeWarning"
+      "enterAlarm"
     ],
     "Sources/Pupil/Core/PowerAndLidMonitor.swift": [
       "PowerHardwareEvent",
@@ -464,8 +464,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 538,
-      "content_hash": "76e0414e264f19c5",
+      "line_count": 599,
+      "content_hash": "d8f965b410350601",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -478,14 +478,14 @@
         "cancelArmingDuringExitDelay",
         "updatePin",
         "performValidatedDisarm",
+        "startArmedInputMonitoring",
+        "stopArmedInputMonitoring",
+        "handleArmedUserInput",
         "triggerTamper",
-        "enterAlarm",
-        "ingestGazeSample",
-        "ingestMotionSample",
-        "simulateGazeWarning"
+        "enterAlarm"
       ],
       "summary": "SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM",
-      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, performValidatedDisarm, triggerTamper, enterAlarm, ingestGazeSample, ingestMotionSample, simulateGazeWarning\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
+      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, performValidatedDisarm, startArmedInputMonitoring, stopArmedInputMonitoring, handleArmedUserInput, triggerTamper, enterAlarm\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
       "keywords": [
         "sources",
         "pupil",
@@ -974,8 +974,8 @@
       "chunk_id": "pupil::Sources::Pupil::NotchOverlay::NotchOverlayView.swift",
       "file_path": "Sources/Pupil/NotchOverlay/NotchOverlayView.swift",
       "module_category": "Biometric Eye & Interactive Notch UI",
-      "line_count": 411,
-      "content_hash": "78206f452bd9fc35",
+      "line_count": 417,
+      "content_hash": "488db6b9034cb63a",
       "symbols": [
         "PupilEyeVectorView",
         "NotchOverlayView",
@@ -1055,15 +1055,15 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldWindow.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift",
       "module_category": "Shielding-Level Privacy Blur NSPanel",
-      "line_count": 77,
-      "content_hash": "d7021207aaa0c869",
+      "line_count": 80,
+      "content_hash": "7eebcd818db0b82d",
       "symbols": [
         "ScreenShieldWindow",
         "sendEvent",
         "keyDown"
       ],
       "summary": "ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n    public static let screenShieldDeleteKey = Notification.Name(\"PupilScreenShieldDeleteKey\")\n    public static let screenShieldSubmitPrompt = Notification.Name(\"PupilScreenShieldSubmitPrompt\")\n    public static let screenShieldDigitTyped = Notification.Name(\"PupilScreenShieldDigitTyped\")\n    public static let screenShieldFocusPrimary = Notification.Name(\"PupilScreenShieldFocusPrimary\")\n    public static let screenShieldSync = Notification.Name(\"PupilScreenShieldSync\")\n    public static let screenShieldAnyKeyPressed = Notification.Name(\"PupilScreenShieldAnyKeyPressed\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n    public static let screenShieldDeleteKey = Notification.Name(\"PupilScreenShieldDeleteKey\")\n    public static let screenShieldSubmitPrompt = Notification.Name(\"PupilScreenShieldSubmitPrompt\")\n    public static let screenShieldDigitTyped = Notification.Name(\"PupilScreenShieldDigitTyped\")\n    public static let screenShieldFocusPrimary = Notification.Name(\"PupilScreenShieldFocusPrimary\")\n    public static let screenShieldSync = Notification.Name(\"PupilScreenShieldSync\")\n    public static let screenShieldAnyKeyPressed = Notification.Name(\"PupilScreenShieldAnyKeyPressed\")\n    public static let screenShieldInputDetected = Notification.Name(\"PupilScreenShieldInputDetected\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false",
       "keywords": [
         "sources",
         "pupil",
@@ -1096,8 +1096,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 443,
-      "content_hash": "4b973fc5608d27a1",
+      "line_count": 459,
+      "content_hash": "54aa0345f3518ab7",
       "symbols": [
         "ScreenShieldView",
         "handleDismissOrCancel",
@@ -1107,7 +1107,7 @@
         "triggerErrorShake"
       ],
       "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n    private var isGazePrivacyOnly: Bool {\n        coordinator.state == .armed &&\n        !coordinator.settings.blurBackgroundWhenArmed &&\n        coordinator.isGazeWarningActive &&\n        coordinator.settings.blurScreenOnGaze\n    }\n\n    public var body: some View {\n        ZStack {\n            // 1. Native behind-window frosted glass blur (always active while armed)\n            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)\n                .ignoresSafeArea()",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n    private var isGazePrivacyOnly: Bool {\n        coordinator.state == .armed &&\n        !coordinator.settings.blurBackgroundWhenArmed &&\n        !coordinator.isInteractiveUnlockRequested &&\n        coordinator.isGazeWarningActive &&\n        coordinator.settings.blurScreenOnGaze\n    }\n\n    public var body: some View {\n        ZStack {\n            // 1. Deep frosted privacy scrim: high-opacity obsidian base that completely blocks screen snooping\n            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.95)",
       "keywords": [
         "sources",
         "pupil",
@@ -1140,8 +1140,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldController.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldController.swift",
       "module_category": "Multi-Display Screen Shield Manager",
-      "line_count": 161,
-      "content_hash": "d7e1fbf8e5cfe427",
+      "line_count": 162,
+      "content_hash": "70190e099deab5a5",
       "symbols": [
         "ScreenShieldController",
         "syncWithCoordinator",
@@ -1777,8 +1777,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 372,
-      "content_hash": "611809ebf306cdc1",
+      "line_count": 388,
+      "content_hash": "6eafbf9c96b734f4",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
