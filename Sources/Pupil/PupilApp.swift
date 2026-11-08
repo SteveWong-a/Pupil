@@ -33,7 +33,6 @@ struct PupilApp: App {
         .defaultSize(SettingsMetrics.windowSize)
         .windowStyle(.hiddenTitleBar)
         .defaultPosition(.center)
-        .restorationBehavior(.disabled)
     }
 }
 

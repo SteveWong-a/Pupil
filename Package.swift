@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "Pupil",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v14)
     ],
     products: [
         .executable(name: "Pupil", targets: ["Pupil"])

@@ -50,9 +50,15 @@ public final class CameraManager: NSObject {
         captureSession
     }
 
+    nonisolated private static let supportedDeviceTypes: [AVCaptureDevice.DeviceType] = [
+        .builtInWideAngleCamera,
+        .continuityCamera,
+        .external
+    ]
+
     public func refreshCameras() {
         let discovery = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInWideAngleCamera, .external],
+            deviceTypes: Self.supportedDeviceTypes,
             mediaType: .video,
             position: .unspecified
         )
@@ -120,7 +126,7 @@ public final class CameraManager: NSObject {
         }
 
         let discovery = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInWideAngleCamera, .external],
+            deviceTypes: Self.supportedDeviceTypes,
             mediaType: .video,
             position: .unspecified
         )

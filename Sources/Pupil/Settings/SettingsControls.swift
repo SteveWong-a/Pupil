@@ -684,6 +684,7 @@ public final class WindowConfiguringView: NSView {
         window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        window.isRestorable = false
 
         let toolbar = NSToolbar(identifier: "PupilSettingsToolbar")
         window.toolbar = toolbar

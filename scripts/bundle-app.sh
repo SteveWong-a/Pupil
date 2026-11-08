@@ -59,6 +59,8 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<'PLIST'
     <true/>
     <key>NSCameraUsageDescription</key>
     <string>Pupil uses your camera on-device via Apple Vision to detect sustained gaze toward your screen while armed. Frames are processed in memory and never saved.</string>
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
 </dict>
 </plist>
 PLIST
