@@ -121,6 +121,11 @@ public struct ScreenShieldView: View {
                 hasError = false
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .screenShieldAnyKeyPressed)) { _ in
+            if isGazePrivacyOnly {
+                coordinator.dismissGazeWarning()
+            }
+        }
     }
 
     // MARK: - Small macOS Authentication Window & Gaze Privacy Capsule

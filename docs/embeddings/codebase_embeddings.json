@@ -3,7 +3,7 @@
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
   "total_indexed_files": 36,
-  "total_source_lines": 7125,
+  "total_source_lines": 7164,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -1055,15 +1055,15 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldWindow.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift",
       "module_category": "Shielding-Level Privacy Blur NSPanel",
-      "line_count": 74,
-      "content_hash": "2068d8626bd9a945",
+      "line_count": 77,
+      "content_hash": "d7021207aaa0c869",
       "symbols": [
         "ScreenShieldWindow",
         "sendEvent",
         "keyDown"
       ],
       "summary": "ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n    public static let screenShieldDeleteKey = Notification.Name(\"PupilScreenShieldDeleteKey\")\n    public static let screenShieldSubmitPrompt = Notification.Name(\"PupilScreenShieldSubmitPrompt\")\n    public static let screenShieldDigitTyped = Notification.Name(\"PupilScreenShieldDigitTyped\")\n    public static let screenShieldFocusPrimary = Notification.Name(\"PupilScreenShieldFocusPrimary\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = false",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldWindow.swift\nModule: Shielding-Level Privacy Blur NSPanel\nSummary: ScreenShieldWindow.swift Pupil Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\nKey Symbols: ScreenShieldWindow, sendEvent, keyDown\nContent Sample:\n//\n//  ScreenShieldWindow.swift\n//  Pupil\n//\n//  Full-screen shielding panel at CGShieldingWindowLevel() that covers the entire display\n//  with a frosted-glass privacy blur while armed, preventing screen snooping until disarmed.\n//\n\nimport AppKit\nimport CoreGraphics\n\nextension Notification.Name {\n    public static let screenShieldOpenPrompt = Notification.Name(\"PupilScreenShieldOpenPrompt\")\n    public static let screenShieldDismissPrompt = Notification.Name(\"PupilScreenShieldDismissPrompt\")\n    public static let screenShieldDeleteKey = Notification.Name(\"PupilScreenShieldDeleteKey\")\n    public static let screenShieldSubmitPrompt = Notification.Name(\"PupilScreenShieldSubmitPrompt\")\n    public static let screenShieldDigitTyped = Notification.Name(\"PupilScreenShieldDigitTyped\")\n    public static let screenShieldFocusPrimary = Notification.Name(\"PupilScreenShieldFocusPrimary\")\n    public static let screenShieldSync = Notification.Name(\"PupilScreenShieldSync\")\n    public static let screenShieldAnyKeyPressed = Notification.Name(\"PupilScreenShieldAnyKeyPressed\")\n}\n\npublic final class ScreenShieldWindow: NSPanel {\n    private static let shieldWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel())\n    )\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.shieldWindowLevel",
       "keywords": [
         "sources",
         "pupil",
@@ -1096,8 +1096,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 438,
-      "content_hash": "9297015fba8a79b3",
+      "line_count": 443,
+      "content_hash": "4b973fc5608d27a1",
       "symbols": [
         "ScreenShieldView",
         "handleDismissOrCancel",
@@ -1140,8 +1140,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldController.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldController.swift",
       "module_category": "Multi-Display Screen Shield Manager",
-      "line_count": 151,
-      "content_hash": "036e2cb4591f65ba",
+      "line_count": 161,
+      "content_hash": "d7e1fbf8e5cfe427",
       "symbols": [
         "ScreenShieldController",
         "syncWithCoordinator",
@@ -1153,7 +1153,7 @@
         "destroyWindows"
       ],
       "summary": "ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldController.swift\nModule: Multi-Display Screen Shield Manager\nSummary: ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\nKey Symbols: ScreenShieldController, syncWithCoordinator, showShield, hideShield, reconfigureForCurrentScreens, activatePrimary, makeShieldWindow, destroyWindows\nContent Sample:\n//\n//  ScreenShieldController.swift\n//  Pupil\n//\n//  Manages the multi-display full-screen privacy blur shield windows.\n//  Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class ScreenShieldController {\n    private weak var coordinator: SecurityCoordinator?\n    private var shieldWindows: [ScreenShieldWindow] = []\n    private var isVisible = false\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.reconfigureForCurrentScreens()\n            }\n        }\n\n        NotificationCenter.default.addObserver(\n            forName: .screenShieldFocusPrimary,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.activatePrimary()\n            }\n        }\n    }",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldController.swift\nModule: Multi-Display Screen Shield Manager\nSummary: ScreenShieldController.swift Pupil Manages the multi-display full-screen privacy blur shield windows. Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\nKey Symbols: ScreenShieldController, syncWithCoordinator, showShield, hideShield, reconfigureForCurrentScreens, activatePrimary, makeShieldWindow, destroyWindows\nContent Sample:\n//\n//  ScreenShieldController.swift\n//  Pupil\n//\n//  Manages the multi-display full-screen privacy blur shield windows.\n//  Blurs all displays while armed and prevents unblurring until disarmed with Keychain PIN or Touch ID.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class ScreenShieldController {\n    private weak var coordinator: SecurityCoordinator?\n    private var shieldWindows: [ScreenShieldWindow] = []\n    private var isVisible = false\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.reconfigureForCurrentScreens()\n            }\n        }\n\n        NotificationCenter.default.addObserver(\n            forName: .screenShieldFocusPrimary,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.activatePrimary()\n            }\n        }\n",
       "keywords": [
         "sources",
         "pupil",
@@ -1226,8 +1226,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::PupilSettings.swift",
       "file_path": "Sources/Pupil/Settings/PupilSettings.swift",
       "module_category": "Observable Settings Store",
-      "line_count": 391,
-      "content_hash": "0fb9e67e91f9f285",
+      "line_count": 397,
+      "content_hash": "b16caea0ded1042b",
       "symbols": [
         "GazeSensitivity",
         "NotchDeterrentStyle",
@@ -1777,8 +1777,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 357,
-      "content_hash": "37d02708438d522c",
+      "line_count": 372,
+      "content_hash": "611809ebf306cdc1",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",

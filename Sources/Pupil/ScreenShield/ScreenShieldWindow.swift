@@ -16,6 +16,8 @@ extension Notification.Name {
     public static let screenShieldSubmitPrompt = Notification.Name("PupilScreenShieldSubmitPrompt")
     public static let screenShieldDigitTyped = Notification.Name("PupilScreenShieldDigitTyped")
     public static let screenShieldFocusPrimary = Notification.Name("PupilScreenShieldFocusPrimary")
+    public static let screenShieldSync = Notification.Name("PupilScreenShieldSync")
+    public static let screenShieldAnyKeyPressed = Notification.Name("PupilScreenShieldAnyKeyPressed")
 }
 
 public final class ScreenShieldWindow: NSPanel {
@@ -57,6 +59,7 @@ public final class ScreenShieldWindow: NSPanel {
             NotificationCenter.default.post(name: .screenShieldDismissPrompt, object: nil)
             return
         }
+        NotificationCenter.default.post(name: .screenShieldAnyKeyPressed, object: nil)
         if event.keyCode == 51 || event.keyCode == 117 { // Delete (Backspace) / Forward Delete
             NotificationCenter.default.post(name: .screenShieldDeleteKey, object: nil)
             return

@@ -37,14 +37,24 @@ public final class ScreenShieldController {
                 self?.activatePrimary()
             }
         }
+
+        NotificationCenter.default.addObserver(
+            forName: .screenShieldSync,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.syncWithCoordinator()
+            }
+        }
     }
 
     public func syncWithCoordinator() {
         guard let coordinator else { return }
-        let isArmedOrEscalated = (coordinator.state == .armed || coordinator.state == .tamperPending || coordinator.state == .alarm)
-        let isArmedBlur = isArmedOrEscalated && coordinator.settings.blurBackgroundWhenArmed
+        let isTamperOrAlarm = (coordinator.state == .tamperPending || coordinator.state == .alarm)
+        let isArmedBlur = (coordinator.state == .armed && coordinator.settings.blurBackgroundWhenArmed)
         let isGazePrivacyBlur = (coordinator.state == .armed && coordinator.isGazeWarningActive && coordinator.settings.blurScreenOnGaze)
-        let shouldShow = coordinator.isShieldPreviewActive || isArmedBlur || isGazePrivacyBlur
+        let shouldShow = coordinator.isShieldPreviewActive || isTamperOrAlarm || isArmedBlur || isGazePrivacyBlur
 
         if shouldShow {
             showShield()

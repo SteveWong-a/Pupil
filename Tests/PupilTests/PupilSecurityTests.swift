@@ -107,8 +107,18 @@ struct PupilSecurityTests {
     @Test("Screen shield blur settings and preview lifecycle")
     @MainActor
     func testScreenShieldAndBlurSettings() {
-        let coordinator = SecurityCoordinator()
-        let settings = coordinator.settings
+        let suiteName = "PupilTest-Shield-\(UUID().uuidString)"
+        guard let isolatedDefaults = UserDefaults(suiteName: suiteName) else {
+            Issue.record("Failed to create isolated UserDefaults")
+            return
+        }
+        defer { isolatedDefaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = PupilSettings(defaults: isolatedDefaults)
+        let coordinator = SecurityCoordinator(settings: settings)
+        #expect(settings.blurBackgroundWhenArmed == false)
+        #expect(settings.blurScreenOnGaze == true)
+
         settings.blurBackgroundWhenArmed = true
         #expect(settings.blurBackgroundWhenArmed == true)
 
@@ -130,6 +140,8 @@ struct PupilSecurityTests {
         #expect(Notification.Name.screenShieldSubmitPrompt.rawValue == "PupilScreenShieldSubmitPrompt")
         #expect(Notification.Name.screenShieldDigitTyped.rawValue == "PupilScreenShieldDigitTyped")
         #expect(Notification.Name.screenShieldFocusPrimary.rawValue == "PupilScreenShieldFocusPrimary")
+        #expect(Notification.Name.screenShieldSync.rawValue == "PupilScreenShieldSync")
+        #expect(Notification.Name.screenShieldAnyKeyPressed.rawValue == "PupilScreenShieldAnyKeyPressed")
 
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: true)
         _ = ScreenShieldView(coordinator: coordinator, isPrimary: false)
@@ -152,8 +164,15 @@ struct PupilSecurityTests {
     @Test("Gaze warning receptiveness: Ultra sensitivity, fast dwell stops, and screen privacy blur")
     @MainActor
     func testGazeWarningReceptivenessAndPrivacyBlur() {
-        let coordinator = SecurityCoordinator()
-        let settings = coordinator.settings
+        let suiteName = "PupilTest-Gaze-\(UUID().uuidString)"
+        guard let isolatedDefaults = UserDefaults(suiteName: suiteName) else {
+            Issue.record("Failed to create isolated UserDefaults")
+            return
+        }
+        defer { isolatedDefaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = PupilSettings(defaults: isolatedDefaults)
+        let coordinator = SecurityCoordinator(settings: settings)
 
         // 1. Verify Ultra sensitivity cone and dwell stops
         #expect(GazeSensitivity.ultra.scoreThreshold == 0.40)
@@ -165,10 +184,6 @@ struct PupilSecurityTests {
         #expect(settings.activeCameraROI.width == 0.90)
 
         // 3. Verify Privacy Blur on Gaze triggers screen shield during armed state
-        defer {
-            settings.blurBackgroundWhenArmed = true
-            settings.blurScreenOnGaze = false
-        }
         settings.blurBackgroundWhenArmed = false
         settings.blurScreenOnGaze = true
         coordinator.startArming(immediate: true)
