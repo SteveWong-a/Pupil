@@ -118,6 +118,7 @@ struct PupilSecurityTests {
         let coordinator = SecurityCoordinator(settings: settings)
         #expect(settings.blurBackgroundWhenArmed == false)
         #expect(settings.blurScreenOnGaze == true)
+        #expect(settings.lockOnInputWhenArmed == true)
 
         settings.blurBackgroundWhenArmed = true
         #expect(settings.blurBackgroundWhenArmed == true)

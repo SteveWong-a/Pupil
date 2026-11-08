@@ -89,17 +89,8 @@ public final class ScreenShieldController {
         isVisible = true
 
         for window in shieldWindows {
-            window.alphaValue = 0.0
+            window.alphaValue = 1.0
             window.orderFrontRegardless()
-        }
-
-        // Animate smooth fade-in
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.35
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            for window in shieldWindows {
-                window.animator().alphaValue = 1.0
-            }
         }
 
         // Make the primary screen's shield key and activate the application for immediate keyboard PIN input
@@ -110,18 +101,10 @@ public final class ScreenShieldController {
         guard isVisible else { return }
         isVisible = false
 
-        let windowsToHide = shieldWindows
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.25
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            for window in windowsToHide {
-                window.animator().alphaValue = 0.0
-            }
-        }, completionHandler: {
-            for window in windowsToHide {
-                window.orderOut(nil)
-            }
-        })
+        for window in shieldWindows {
+            window.orderOut(nil)
+            window.alphaValue = 0.0
+        }
     }
 
     private func reconfigureForCurrentScreens() {

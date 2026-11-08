@@ -130,6 +130,23 @@ public final class SecurityCoordinator {
         }
 
         bindSensors()
+
+        NotificationCenter.default.addObserver(
+            forName: .screenShieldSync,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.state == .armed {
+                    if self.settings.lockOnInputWhenArmed {
+                        self.startArmedInputMonitoring()
+                    } else {
+                        self.stopArmedInputMonitoring()
+                    }
+                }
+            }
+        }
     }
 
     public var isMonitoring: Bool {
@@ -274,6 +291,7 @@ public final class SecurityCoordinator {
 
     private func startArmedInputMonitoring() {
         stopArmedInputMonitoring()
+        guard settings.lockOnInputWhenArmed else { return }
 
         armedGlobalInputMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]
@@ -305,7 +323,7 @@ public final class SecurityCoordinator {
     }
 
     public func handleArmedUserInput() {
-        guard state == .armed else { return }
+        guard state == .armed, settings.lockOnInputWhenArmed else { return }
         guard !isInteractiveUnlockRequested else { return }
         isInteractiveUnlockRequested = true
         logEvent("Armed Input Detected", detail: "Keyboard or mouse interaction detected. Screen locked with PIN / Touch ID challenge.")

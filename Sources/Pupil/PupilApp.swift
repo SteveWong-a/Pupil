@@ -87,6 +87,26 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
             object: nil
         )
 
+        DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.pupil.test.previewShield"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.coordinator.previewScreenShield(durationSeconds: 4.5)
+            }
+        }
+
+        DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.pupil.test.simulateGaze"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.coordinator.simulateGazeWarning()
+            }
+        }
+
         // Reveal the Settings window immediately on launch unless launched silently
         if !CommandLine.arguments.contains("--silent") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in

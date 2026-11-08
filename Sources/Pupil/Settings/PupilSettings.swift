@@ -227,6 +227,13 @@ public final class PupilSettings {
         }
     }
 
+    public var lockOnInputWhenArmed: Bool {
+        didSet {
+            defaults.set(lockOnInputWhenArmed, forKey: Keys.lockOnInputWhenArmed)
+            NotificationCenter.default.post(name: .screenShieldSync, object: nil)
+        }
+    }
+
     public var allowTouchIDDisarm: Bool {
         didSet { defaults.set(allowTouchIDDisarm, forKey: Keys.allowTouchIDDisarm) }
     }
@@ -351,6 +358,7 @@ public final class PupilSettings {
         }
         self.blurBackgroundWhenArmed = defaults.object(forKey: Keys.blurBackgroundWhenArmed) as? Bool ?? false
         self.blurScreenOnGaze = defaults.object(forKey: Keys.blurScreenOnGaze) as? Bool ?? true
+        self.lockOnInputWhenArmed = defaults.object(forKey: Keys.lockOnInputWhenArmed) as? Bool ?? true
         self.allowTouchIDDisarm = defaults.object(forKey: Keys.allowTouchIDDisarm) as? Bool ?? true
         self.hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
         self.sirenFrequencyHz = defaults.object(forKey: Keys.sirenFrequencyHz) as? Int ?? 880
@@ -385,6 +393,7 @@ public final class PupilSettings {
         static let spatialMotionSensitivity = "pupil.spatialMotionSensitivity"
         static let blurBackgroundWhenArmed = "pupil.blurBackgroundWhenArmed"
         static let blurScreenOnGaze = "pupil.blurScreenOnGaze"
+        static let lockOnInputWhenArmed = "pupil.lockOnInputWhenArmed"
         static let allowTouchIDDisarm = "pupil.allowTouchIDDisarm"
         static let hapticFeedbackEnabled = "pupil.hapticFeedbackEnabled"
         static let sirenFrequencyHz = "pupil.sirenFrequencyHz"

@@ -36,24 +36,25 @@ public struct ScreenShieldView: View {
 
     public var body: some View {
         ZStack {
-            // 1. Deep frosted privacy scrim: high-opacity obsidian base that completely blocks screen snooping
-            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.95)
+            // 1. Heavy frosted obsidian privacy base: completely obscures screen content
+            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.96)
                 .ignoresSafeArea()
 
-            // 2. Native frosted glass material layer for macOS vibrancy and glass depth
-            VisualEffectView(material: .fullScreenUI, blendingMode: .withinWindow, state: .active)
+            // 2. Native macOS ultra-thick material layer for rich glass depth
+            Rectangle()
+                .fill(.ultraThickMaterial)
                 .ignoresSafeArea()
-                .opacity(0.85)
+                .opacity(0.92)
 
             // 3. Deep radial privacy vignette
             RadialGradient(
                 colors: [
-                    Color.black.opacity(0.35),
-                    Color.black.opacity(0.82)
+                    Color.black.opacity(0.40),
+                    Color.black.opacity(0.85)
                 ],
                 center: .center,
-                startRadius: 180,
-                endRadius: 900
+                startRadius: 160,
+                endRadius: 950
             )
             .ignoresSafeArea()
 

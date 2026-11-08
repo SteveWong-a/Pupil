@@ -40,14 +40,28 @@ public struct GeneralSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
-                    title: "Blur screen while armed",
-                    info: "Covers all displays with a frosted blur while armed. Click anywhere to reveal the PIN prompt."
+                    title: "Lock on keyboard or mouse",
+                    info: "When armed, any keyboard or mouse input immediately locks the screen with a PIN / Touch ID challenge."
                 ) {
-                    PupilToggle(isOn: $settings.blurBackgroundWhenArmed)
+                    PupilToggle(isOn: $settings.lockOnInputWhenArmed)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Blur screen on gaze",
+                    info: "Instantly obscures all displays with frosted privacy glass whenever someone looks at your screen."
+                ) {
+                    PupilToggle(isOn: $settings.blurScreenOnGaze)
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(title: "Unlock with Touch ID") {
                     PupilToggle(isOn: $settings.allowTouchIDDisarm)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Continuous blur while armed",
+                    info: "Keep the screen frosted continuously as soon as the system is armed (unblur by entering PIN or Touch ID)."
+                ) {
+                    PupilToggle(isOn: $settings.blurBackgroundWhenArmed)
                 }
                 SettingsGroupDivider()
                 displayPickerRow
