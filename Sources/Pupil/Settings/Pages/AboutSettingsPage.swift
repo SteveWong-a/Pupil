@@ -45,8 +45,25 @@ public struct AboutSettingsPage: View {
                         .font(.system(size: 13))
                         .foregroundStyle(SettingsMetrics.textSecondary)
                 }
+                SettingsGroupDivider()
+                SettingsRowContent(title: "License") {
+                    Text("MIT License")
+                        .font(.system(size: 13))
+                        .foregroundStyle(SettingsMetrics.textSecondary)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(title: "Copyright") {
+                    Text("© 2026 Steve Wong")
+                        .font(.system(size: 13))
+                        .foregroundStyle(SettingsMetrics.textSecondary)
+                }
             }
             .padding(.top, 8)
+
+            SettingsCaption(text: "Pupil is a software deterrent against opportunistic theft and shoulder-surfing. Distributed under the MIT License.")
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 20)
