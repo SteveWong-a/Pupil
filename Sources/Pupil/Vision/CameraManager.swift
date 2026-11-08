@@ -34,11 +34,16 @@ public final class CameraManager: NSObject {
     @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: "com.pupil.camera.output", qos: .userInitiated)
     @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0
+    @ObservationIgnored private nonisolated(unsafe) var activeROI: CameraROI = .default
     @ObservationIgnored public nonisolated let motionDetector = VisionMotionDetector()
 
     public override init() {
         super.init()
         refreshCameras()
+    }
+
+    public func updateActiveROI(_ roi: CameraROI) {
+        activeROI = roi
     }
 
     public var captureSessionReference: AVCaptureSession {
@@ -161,7 +166,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
 
-        let sample = (try? VisionGazeDetector.analyzeFrame(cgImage, roi: .default, timestamp: now)) ?? .empty(at: now)
+        let sample = (try? VisionGazeDetector.analyzeFrame(cgImage, roi: activeROI, timestamp: now)) ?? .empty(at: now)
         let motionSample = motionDetector.analyzeFrame(
             cgImage,
             faceBoundingBoxes: sample.faceBoundingBoxes,

@@ -331,8 +331,14 @@ public final class SecurityCoordinator {
 
         guard state == .armed, settings.gazeDetectionEnabled else { return }
 
-        if snapshot.isGazeWarningActive && !isGazeWarningActive {
-            activateGazeWarning(simulated: false)
+        if snapshot.isGazeWarningActive {
+            if !isGazeWarningActive {
+                activateGazeWarning(simulated: false)
+            } else {
+                scheduleGazeWarningDismissal(delaySeconds: 1.5)
+            }
+        } else if isGazeWarningActive && snapshot.elapsedDwellSeconds == 0 {
+            scheduleGazeWarningDismissal(delaySeconds: 0.8)
         }
     }
 
@@ -391,7 +397,7 @@ public final class SecurityCoordinator {
 
         logEvent(
             "Gaze Warning",
-            detail: "Sustained gaze toward screen detected (≥ \(String(format: "%.1fs", settings.dwellThresholdSeconds))). Eye deterrent opened.",
+            detail: "Sustained gaze toward screen detected (≥ \(String(format: "%.1fs", settings.dwellThresholdSeconds))). Deterrent activated.",
             simulated: simulated
         )
         if settings.hapticFeedbackEnabled {
@@ -399,17 +405,29 @@ public final class SecurityCoordinator {
         }
         onNotchUpdateNeeded?()
 
-        let dismissItem = DispatchWorkItem { [weak self] in
+        scheduleGazeWarningDismissal(delaySeconds: 3.0)
+    }
+
+    public func dismissGazeWarning() {
+        gazeWarningDismissWorkItem?.cancel()
+        gazeWarningDismissWorkItem = nil
+        guard isGazeWarningActive else { return }
+        isGazeWarningActive = false
+        gazeDwellProgress = 0
+        gazeAggregator.reset()
+        onNotchUpdateNeeded?()
+    }
+
+    private func scheduleGazeWarningDismissal(delaySeconds: Double) {
+        gazeWarningDismissWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.isGazeWarningActive = false
-                self.gazeDwellProgress = 0
-                self.gazeAggregator.reset()
-                self.onNotchUpdateNeeded?()
+                self.dismissGazeWarning()
             }
         }
-        gazeWarningDismissWorkItem = dismissItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5, execute: dismissItem)
+        gazeWarningDismissWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds, execute: item)
     }
 
     // MARK: - Camera Lifecycle
@@ -420,6 +438,7 @@ public final class SecurityCoordinator {
     }
 
     public func syncCameraLifecycle() {
+        cameraManager.updateActiveROI(settings.activeCameraROI)
         let shouldRunCamera = isCameraPreviewRequested || (isMonitoring && (settings.gazeDetectionEnabled || settings.isSpatialMotionEnabled))
         if shouldRunCamera {
             cameraManager.startCapture(preferredDeviceID: settings.preferredCameraID)

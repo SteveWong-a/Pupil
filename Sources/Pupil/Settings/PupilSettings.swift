@@ -13,6 +13,7 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
     case relaxed
     case balanced
     case strict
+    case ultra
 
     public var id: String { rawValue }
 
@@ -21,6 +22,7 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
         case .relaxed: return "Relaxed"
         case .balanced: return "Default"
         case .strict: return "Strict"
+        case .ultra: return "Ultra"
         }
     }
 
@@ -29,6 +31,7 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
         case .relaxed: return "Direct frontal gaze only."
         case .balanced: return "Balanced detection cone."
         case .strict: return "Wide peripheral detection cone."
+        case .ultra: return "Aggressive cone for side shoulder-surfing."
         }
     }
 
@@ -37,6 +40,7 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
         case .relaxed: return 0.75
         case .balanced: return 0.65
         case .strict: return 0.52
+        case .ultra: return 0.40
         }
     }
 
@@ -44,7 +48,8 @@ public enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendab
         switch self {
         case .relaxed: return "eye"
         case .balanced: return "eye.fill"
-        case .strict: return "eye.trianglebadge.exclamationmark.fill"
+        case .strict: return "eye.trianglebadge.exclamationmark"
+        case .ultra: return "eye.trianglebadge.exclamationmark.fill"
         }
     }
 }
@@ -212,6 +217,10 @@ public final class PupilSettings {
         didSet { defaults.set(blurBackgroundWhenArmed, forKey: Keys.blurBackgroundWhenArmed) }
     }
 
+    public var blurScreenOnGaze: Bool {
+        didSet { defaults.set(blurScreenOnGaze, forKey: Keys.blurScreenOnGaze) }
+    }
+
     public var allowTouchIDDisarm: Bool {
         didSet { defaults.set(allowTouchIDDisarm, forKey: Keys.allowTouchIDDisarm) }
     }
@@ -248,9 +257,16 @@ public final class PupilSettings {
         }
     }
 
+    public var activeCameraROI: CameraROI {
+        if gazeSensitivity == .ultra {
+            return CameraROI(x: 0.05, y: 0.05, width: 0.90, height: 0.90)
+        }
+        return cameraRoi
+    }
+
     public static let exitDelayStops: [Int] = [5, 10, 15, 30]
     public static let gracePeriodStops: [Int] = [5, 10, 15, 30]
-    public static let dwellStops: [Double] = [1.5, 2.0, 2.5, 3.5]
+    public static let dwellStops: [Double] = [0.5, 1.0, 1.5, 2.0, 3.0]
 
     public var exitDelaySliderIndex: Double {
         get { Double(Self.exitDelayStops.firstIndex(of: exitDelaySeconds) ?? 1) }
@@ -328,6 +344,7 @@ public final class PupilSettings {
             self.spatialMotionSensitivity = .medium
         }
         self.blurBackgroundWhenArmed = defaults.object(forKey: Keys.blurBackgroundWhenArmed) as? Bool ?? true
+        self.blurScreenOnGaze = defaults.object(forKey: Keys.blurScreenOnGaze) as? Bool ?? false
         self.allowTouchIDDisarm = defaults.object(forKey: Keys.allowTouchIDDisarm) as? Bool ?? true
         self.hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
         self.sirenFrequencyHz = defaults.object(forKey: Keys.sirenFrequencyHz) as? Int ?? 880
@@ -361,6 +378,7 @@ public final class PupilSettings {
         static let isSpatialMotionEnabled = "pupil.isSpatialMotionEnabled"
         static let spatialMotionSensitivity = "pupil.spatialMotionSensitivity"
         static let blurBackgroundWhenArmed = "pupil.blurBackgroundWhenArmed"
+        static let blurScreenOnGaze = "pupil.blurScreenOnGaze"
         static let allowTouchIDDisarm = "pupil.allowTouchIDDisarm"
         static let hapticFeedbackEnabled = "pupil.hapticFeedbackEnabled"
         static let sirenFrequencyHz = "pupil.sirenFrequencyHz"

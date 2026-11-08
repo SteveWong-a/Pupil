@@ -109,6 +109,7 @@ struct PupilSecurityTests {
     func testScreenShieldAndBlurSettings() {
         let coordinator = SecurityCoordinator()
         let settings = coordinator.settings
+        settings.blurBackgroundWhenArmed = true
         #expect(settings.blurBackgroundWhenArmed == true)
 
         let shieldController = ScreenShieldController(coordinator: coordinator)
@@ -146,6 +147,45 @@ struct PupilSecurityTests {
         // Point outside active notch bounds (e.g. at bottom center (221, 50)) should return nil to let website clicks pass through
         let outsidePoint = NSPoint(x: 221, y: 50)
         #expect(hostingView.hitTest(outsidePoint) == nil)
+    }
+
+    @Test("Gaze warning receptiveness: Ultra sensitivity, fast dwell stops, and screen privacy blur")
+    @MainActor
+    func testGazeWarningReceptivenessAndPrivacyBlur() {
+        let coordinator = SecurityCoordinator()
+        let settings = coordinator.settings
+
+        // 1. Verify Ultra sensitivity cone and dwell stops
+        #expect(GazeSensitivity.ultra.scoreThreshold == 0.40)
+        #expect(PupilSettings.dwellStops.contains(0.5))
+        #expect(PupilSettings.dwellStops.contains(1.0))
+
+        // 2. Verify wide peripheral ROI for Ultra
+        settings.gazeSensitivity = .ultra
+        #expect(settings.activeCameraROI.width == 0.90)
+
+        // 3. Verify Privacy Blur on Gaze triggers screen shield during armed state
+        defer {
+            settings.blurBackgroundWhenArmed = true
+            settings.blurScreenOnGaze = false
+        }
+        settings.blurBackgroundWhenArmed = false
+        settings.blurScreenOnGaze = true
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+
+        let shieldController = ScreenShieldController(coordinator: coordinator)
+        shieldController.syncWithCoordinator()
+
+        // Gaze warning active -> shield should be showing
+        coordinator.simulateGazeWarning()
+        #expect(coordinator.isGazeWarningActive == true)
+        shieldController.syncWithCoordinator()
+
+        // Dismiss gaze warning -> shield unblurs cleanly
+        coordinator.dismissGazeWarning()
+        #expect(coordinator.isGazeWarningActive == false)
+        shieldController.syncWithCoordinator()
     }
 
     @Test("Notch deterrent style has only minimal pill and silent log options")

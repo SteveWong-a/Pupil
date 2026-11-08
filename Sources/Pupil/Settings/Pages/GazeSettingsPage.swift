@@ -30,6 +30,13 @@ public struct GazeSettingsPage: View {
                     ))
                 }
                 SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Blur screen on gaze",
+                    info: "Instantly covers display content with frosted glass while someone looks at your screen, clearing when they look away."
+                ) {
+                    PupilToggle(isOn: $settings.blurScreenOnGaze)
+                }
+                SettingsGroupDivider()
                 cameraDevicePickerRow
                 SettingsGroupDivider()
                 SettingsLabeledOptionRow(
@@ -71,7 +78,7 @@ public struct GazeSettingsPage: View {
                         stopCount: PupilSettings.dwellStops.count
                     )
                 }
-                SettingsCaption(text: "Higher sensitivity detects wider peripheral angles; dwell duration controls how long a gaze must linger before the notch responds.")
+                SettingsCaption(text: "Higher sensitivity detects wider peripheral angles (Ultra catches side shoulder-surfing); dwell duration controls how quickly the privacy blur or deterrent triggers.")
             }
 
             VStack(alignment: .leading, spacing: 8) {

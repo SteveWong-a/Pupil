@@ -26,6 +26,12 @@ public struct ScreenShieldView: View {
 
     private var isAlarm: Bool { coordinator.state == .alarm }
     private var isTamper: Bool { coordinator.state == .tamperPending }
+    private var isGazePrivacyOnly: Bool {
+        coordinator.state == .armed &&
+        !coordinator.settings.blurBackgroundWhenArmed &&
+        coordinator.isGazeWarningActive &&
+        coordinator.settings.blurScreenOnGaze
+    }
 
     public var body: some View {
         ZStack {
@@ -45,28 +51,35 @@ public struct ScreenShieldView: View {
             )
             .ignoresSafeArea()
 
-            // 3. Click layer: clicking background refocuses the PIN prompt rather than dismissing into an unclickable limbo
+            // 3. Click layer: clicking background refocuses the PIN prompt or dismisses transient gaze privacy blur
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if isPrimary {
+                    if isGazePrivacyOnly {
+                        coordinator.dismissGazeWarning()
+                    } else if isPrimary {
                         isPinFocused = true
                     } else {
                         NotificationCenter.default.post(name: .screenShieldFocusPrimary, object: nil)
                     }
                 }
 
-            // 4. Centered macOS authentication dialog (rendered on the primary screen)
+            // 4. Centered modal dialog or transient gaze privacy capsule
             if isPrimary && isPromptPresented {
-                macOSPasswordWindow
-                    .transition(
-                        .asymmetric(
-                            insertion: .scale(scale: 0.95).combined(with: .opacity),
-                            removal: .scale(scale: 0.95).combined(with: .opacity)
+                if isGazePrivacyOnly {
+                    gazePrivacyCapsule
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                } else {
+                    macOSPasswordWindow
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.95).combined(with: .opacity),
+                                removal: .scale(scale: 0.95).combined(with: .opacity)
+                            )
                         )
-                    )
-                    .offset(x: shakeOffset)
+                        .offset(x: shakeOffset)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -110,7 +123,50 @@ public struct ScreenShieldView: View {
         }
     }
 
-    // MARK: - Small macOS Authentication Window
+    // MARK: - Small macOS Authentication Window & Gaze Privacy Capsule
+
+    private var gazePrivacyCapsule: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(PupilTheme.warningAmber.opacity(0.12))
+                    .frame(width: 52, height: 52)
+                    .overlay(
+                        Circle().strokeBorder(PupilTheme.warningAmber.opacity(0.35), lineWidth: 1)
+                    )
+
+                PupilEyeVectorView(
+                    isOpen: true,
+                    lookOffset: coordinator.eyeLookOffset,
+                    accentColor: PupilTheme.warningAmber,
+                    size: 26
+                )
+            }
+
+            VStack(spacing: 4) {
+                Text("Privacy Shield Active")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.white)
+
+                Text("Screen obscured while gaze is detected.\nLook away or tap any key to reveal.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.white.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 260)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(white: 0.11).opacity(0.95))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.55), radius: 32, x: 0, y: 14)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
 
     private var macOSPasswordWindow: some View {
         VStack(spacing: 16) {
@@ -320,7 +376,9 @@ public struct ScreenShieldView: View {
     // MARK: - Actions
 
     private func handleDismissOrCancel() {
-        if coordinator.isShieldPreviewActive {
+        if isGazePrivacyOnly {
+            coordinator.dismissGazeWarning()
+        } else if coordinator.isShieldPreviewActive {
             coordinator.previewScreenShield(durationSeconds: 0)
         } else if coordinator.state == .arming {
             coordinator.cancelArmingDuringExitDelay()

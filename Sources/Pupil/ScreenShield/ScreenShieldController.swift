@@ -42,7 +42,9 @@ public final class ScreenShieldController {
     public func syncWithCoordinator() {
         guard let coordinator else { return }
         let isArmedOrEscalated = (coordinator.state == .armed || coordinator.state == .tamperPending || coordinator.state == .alarm)
-        let shouldShow = coordinator.isShieldPreviewActive || (isArmedOrEscalated && coordinator.settings.blurBackgroundWhenArmed)
+        let isArmedBlur = isArmedOrEscalated && coordinator.settings.blurBackgroundWhenArmed
+        let isGazePrivacyBlur = (coordinator.state == .armed && coordinator.isGazeWarningActive && coordinator.settings.blurScreenOnGaze)
+        let shouldShow = coordinator.isShieldPreviewActive || isArmedBlur || isGazePrivacyBlur
 
         if shouldShow {
             showShield()

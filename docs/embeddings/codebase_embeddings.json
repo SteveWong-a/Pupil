@@ -3,7 +3,7 @@
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
   "total_indexed_files": 36,
-  "total_source_lines": 6976,
+  "total_source_lines": 7125,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -112,6 +112,7 @@
     "Sources/Pupil/Vision/CameraManager.swift": [
       "CameraDeviceInfo",
       "CameraManager",
+      "updateActiveROI",
       "refreshCameras",
       "requestCameraAccess",
       "startCapture",
@@ -285,6 +286,7 @@
       "testGazeDwellAggregator",
       "testSecurityCoordinatorLifecycle",
       "testScreenShieldAndBlurSettings",
+      "testGazeWarningReceptivenessAndPrivacyBlur",
       "testNotchDeterrentStyleOptions",
       "testTableBumpMotionSpikeSuppressed",
       "testSustainedSpatialLiftEscalationAndDisarmReset",
@@ -462,8 +464,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 519,
-      "content_hash": "a46a7b5fec2f6c82",
+      "line_count": 538,
+      "content_hash": "76e0414e264f19c5",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -796,11 +798,12 @@
       "chunk_id": "pupil::Sources::Pupil::Vision::CameraManager.swift",
       "file_path": "Sources/Pupil/Vision/CameraManager.swift",
       "module_category": "AVFoundation 10 FPS Camera Capture",
-      "line_count": 179,
-      "content_hash": "26e556516b8d8666",
+      "line_count": 184,
+      "content_hash": "7f71bb5e9ecf5fe4",
       "symbols": [
         "CameraDeviceInfo",
         "CameraManager",
+        "updateActiveROI",
         "refreshCameras",
         "requestCameraAccess",
         "startCapture",
@@ -810,7 +813,7 @@
         "captureOutput"
       ],
       "summary": "CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.",
-      "semantic_text": "File: Sources/Pupil/Vision/CameraManager.swift\nModule: AVFoundation 10 FPS Camera Capture\nSummary: CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.\nKey Symbols: CameraDeviceInfo, CameraManager, refreshCameras, requestCameraAccess, startCapture, resetMotionAnchor, stopCapture, configureAndStartSession, captureOutput\nContent Sample:\n//\n//  CameraManager.swift\n//  Pupil\n//\n//  AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS\n//  for real-time Vision gaze analysis. Never writes frames to disk.\n//\n\n@preconcurrency import AVFoundation\nimport CoreGraphics\n@preconcurrency import CoreImage\nimport Foundation\nimport Observation\n\npublic struct CameraDeviceInfo: Identifiable, Equatable, Sendable {\n    public let id: String\n    public let name: String\n    public let isBuiltIn: Bool\n}\n\n@MainActor\n@Observable\npublic final class CameraManager: NSObject {\n    public private(set) var availableCameras: [CameraDeviceInfo] = []\n    public private(set) var authorizationStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)\n    public private(set) var isRunning: Bool = false\n    public private(set) var lastFrameImage: CGImage?\n\n    public var onGazeSample: ((GazeSample) -> Void)?\n    public var onMotionSample: ((MotionSample) -> Void)?\n\n    @ObservationIgnored private nonisolated(unsafe) let captureSession = AVCaptureSession()\n    @ObservationIgnored private let sessionQueue = DispatchQueue(label: \"com.pupil.camera.session\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: \"com.pupil.camera.output\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])\n    @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0\n    @ObservationIgnored public nonisolated let motionDetector = VisionMotionDetector()\n\n    public override init() {\n        super.init()",
+      "semantic_text": "File: Sources/Pupil/Vision/CameraManager.swift\nModule: AVFoundation 10 FPS Camera Capture\nSummary: CameraManager.swift Pupil AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS for real-time Vision gaze analysis. Never writes frames to disk.\nKey Symbols: CameraDeviceInfo, CameraManager, updateActiveROI, refreshCameras, requestCameraAccess, startCapture, resetMotionAnchor, stopCapture, configureAndStartSession, captureOutput\nContent Sample:\n//\n//  CameraManager.swift\n//  Pupil\n//\n//  AVFoundation camera capture & device enumeration, running at a battery-efficient 10 FPS\n//  for real-time Vision gaze analysis. Never writes frames to disk.\n//\n\n@preconcurrency import AVFoundation\nimport CoreGraphics\n@preconcurrency import CoreImage\nimport Foundation\nimport Observation\n\npublic struct CameraDeviceInfo: Identifiable, Equatable, Sendable {\n    public let id: String\n    public let name: String\n    public let isBuiltIn: Bool\n}\n\n@MainActor\n@Observable\npublic final class CameraManager: NSObject {\n    public private(set) var availableCameras: [CameraDeviceInfo] = []\n    public private(set) var authorizationStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)\n    public private(set) var isRunning: Bool = false\n    public private(set) var lastFrameImage: CGImage?\n\n    public var onGazeSample: ((GazeSample) -> Void)?\n    public var onMotionSample: ((MotionSample) -> Void)?\n\n    @ObservationIgnored private nonisolated(unsafe) let captureSession = AVCaptureSession()\n    @ObservationIgnored private let sessionQueue = DispatchQueue(label: \"com.pupil.camera.session\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated let videoOutputQueue = DispatchQueue(label: \"com.pupil.camera.output\", qos: .userInitiated)\n    @ObservationIgnored private nonisolated(unsafe) let ciContext = CIContext(options: [.useSoftwareRenderer: false])\n    @ObservationIgnored private nonisolated(unsafe) var lastProcessedTime: TimeInterval = 0\n    @ObservationIgnored private nonisolated(unsafe) var activeROI: CameraROI = .default\n    @ObservationIgnored public nonisolated let motionDetector = VisionMotionDetector()\n\n    public override init() {",
       "keywords": [
         "sources",
         "pupil",
@@ -1093,8 +1096,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 380,
-      "content_hash": "b57345ef2f30d7cc",
+      "line_count": 438,
+      "content_hash": "9297015fba8a79b3",
       "symbols": [
         "ScreenShieldView",
         "handleDismissOrCancel",
@@ -1104,7 +1107,7 @@
         "triggerErrorShake"
       ],
       "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n\n    public var body: some View {\n        ZStack {\n            // 1. Native behind-window frosted glass blur (always active while armed)\n            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)\n                .ignoresSafeArea()\n\n            // 2. Subtle privacy vignette\n            RadialGradient(\n                colors: [\n                    Color.black.opacity(0.32),\n                    Color.black.opacity(0.68)",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n    private var isGazePrivacyOnly: Bool {\n        coordinator.state == .armed &&\n        !coordinator.settings.blurBackgroundWhenArmed &&\n        coordinator.isGazeWarningActive &&\n        coordinator.settings.blurScreenOnGaze\n    }\n\n    public var body: some View {\n        ZStack {\n            // 1. Native behind-window frosted glass blur (always active while armed)\n            VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)\n                .ignoresSafeArea()",
       "keywords": [
         "sources",
         "pupil",
@@ -1137,8 +1140,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldController.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldController.swift",
       "module_category": "Multi-Display Screen Shield Manager",
-      "line_count": 149,
-      "content_hash": "db0b95239daa87a8",
+      "line_count": 151,
+      "content_hash": "036e2cb4591f65ba",
       "symbols": [
         "ScreenShieldController",
         "syncWithCoordinator",
@@ -1223,8 +1226,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::PupilSettings.swift",
       "file_path": "Sources/Pupil/Settings/PupilSettings.swift",
       "module_category": "Observable Settings Store",
-      "line_count": 373,
-      "content_hash": "9bb97f5ff4347726",
+      "line_count": 391,
+      "content_hash": "0fb9e67e91f9f285",
       "symbols": [
         "GazeSensitivity",
         "NotchDeterrentStyle",
@@ -1237,7 +1240,7 @@
         "bindMenuBarVisibility"
       ],
       "summary": "PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.",
-      "semantic_text": "File: Sources/Pupil/Settings/PupilSettings.swift\nModule: Observable Settings Store\nSummary: PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\nKey Symbols: GazeSensitivity, NotchDeterrentStyle, SpatialMotionSensitivity, HardwareTrigger, CameraROI, PupilSettings, Keys, contains, bindMenuBarVisibility\nContent Sample:\n//\n//  PupilSettings.swift\n//  Pupil\n//\n//  Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\n//\n\nimport Foundation\nimport Observation\nimport SwiftUI\n\npublic enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendable {\n    case relaxed\n    case balanced\n    case strict\n\n    public var id: String { rawValue }\n\n    public var title: String {\n        switch self {\n        case .relaxed: return \"Relaxed\"\n        case .balanced: return \"Default\"\n        case .strict: return \"Strict\"\n        }\n    }\n\n    public var subtitle: String {\n        switch self {\n        case .relaxed: return \"Direct frontal gaze only.\"\n        case .balanced: return \"Balanced detection cone.\"\n        case .strict: return \"Wide peripheral detection cone.\"\n        }\n    }\n\n    public var scoreThreshold: Float {\n        switch self {\n        case .relaxed: return 0.75\n        case .balanced: return 0.65\n        case .strict: return 0.52\n        }",
+      "semantic_text": "File: Sources/Pupil/Settings/PupilSettings.swift\nModule: Observable Settings Store\nSummary: PupilSettings.swift Pupil Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\nKey Symbols: GazeSensitivity, NotchDeterrentStyle, SpatialMotionSensitivity, HardwareTrigger, CameraROI, PupilSettings, Keys, contains, bindMenuBarVisibility\nContent Sample:\n//\n//  PupilSettings.swift\n//  Pupil\n//\n//  Reactive, UserDefaults-backed configuration store modeled after GlanceSettings.\n//\n\nimport Foundation\nimport Observation\nimport SwiftUI\n\npublic enum GazeSensitivity: String, CaseIterable, Identifiable, Codable, Sendable {\n    case relaxed\n    case balanced\n    case strict\n    case ultra\n\n    public var id: String { rawValue }\n\n    public var title: String {\n        switch self {\n        case .relaxed: return \"Relaxed\"\n        case .balanced: return \"Default\"\n        case .strict: return \"Strict\"\n        case .ultra: return \"Ultra\"\n        }\n    }\n\n    public var subtitle: String {\n        switch self {\n        case .relaxed: return \"Direct frontal gaze only.\"\n        case .balanced: return \"Balanced detection cone.\"\n        case .strict: return \"Wide peripheral detection cone.\"\n        case .ultra: return \"Aggressive cone for side shoulder-surfing.\"\n        }\n    }\n\n    public var scoreThreshold: Float {\n        switch self {\n        case .relaxed: return 0.75",
       "keywords": [
         "sources",
         "pupil",
@@ -1619,15 +1622,15 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::GazeSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/GazeSettingsPage.swift",
       "module_category": "Gaze Settings & Live Calibration Page",
-      "line_count": 213,
-      "content_hash": "b284ccceb086d565",
+      "line_count": 220,
+      "content_hash": "9a15e4ac911eeb91",
       "symbols": [
         "GazeSettingsPage",
         "deterrentStylePreview",
         "togglePreview"
       ],
       "summary": "GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.",
-      "semantic_text": "File: Sources/Pupil/Settings/Pages/GazeSettingsPage.swift\nModule: Gaze Settings & Live Calibration Page\nSummary: GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\nKey Symbols: GazeSettingsPage, deterrentStylePreview, togglePreview\nContent Sample:\n//\n//  GazeSettingsPage.swift\n//  Pupil\n//\n//  Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage\n//  and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\n//\n\nimport AVFoundation\nimport SwiftUI\n\npublic struct GazeSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Gaze deterrence\") {\n                    PupilToggle(isOn: Binding(\n                        get: { settings.gazeDetectionEnabled },\n                        set: { val in\n                            settings.gazeDetectionEnabled = val\n                            coordinator.syncCameraLifecycle()\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                cameraDevicePickerRow\n                SettingsGroupDivider()\n                SettingsLabeledOptionRow(\n                    title: \"Style\",\n                    subtitle: \"Choose how Pupil responds when someone looks at your screen.\"\n                ) {\n                    ForEach(NotchDeterrentStyle.allCases) { style in\n                        let isSelected = settings.notchStyle == style",
+      "semantic_text": "File: Sources/Pupil/Settings/Pages/GazeSettingsPage.swift\nModule: Gaze Settings & Live Calibration Page\nSummary: GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\nKey Symbols: GazeSettingsPage, deterrentStylePreview, togglePreview\nContent Sample:\n//\n//  GazeSettingsPage.swift\n//  Pupil\n//\n//  Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage\n//  and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\n//\n\nimport AVFoundation\nimport SwiftUI\n\npublic struct GazeSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Gaze deterrence\") {\n                    PupilToggle(isOn: Binding(\n                        get: { settings.gazeDetectionEnabled },\n                        set: { val in\n                            settings.gazeDetectionEnabled = val\n                            coordinator.syncCameraLifecycle()\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                SettingsRowContent(\n                    title: \"Blur screen on gaze\",\n                    info: \"Instantly covers display content with frosted glass while someone looks at your screen, clearing when they look away.\"\n                ) {\n                    PupilToggle(isOn: $settings.blurScreenOnGaze)\n                }\n                SettingsGroupDivider()\n                cameraDevicePickerRow",
       "keywords": [
         "sources",
         "pupil",
@@ -1774,14 +1777,15 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 317,
-      "content_hash": "f9e54ac1e422afbc",
+      "line_count": 357,
+      "content_hash": "37d02708438d522c",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
         "testGazeDwellAggregator",
         "testSecurityCoordinatorLifecycle",
         "testScreenShieldAndBlurSettings",
+        "testGazeWarningReceptivenessAndPrivacyBlur",
         "testNotchDeterrentStyleOptions",
         "testTableBumpMotionSpikeSuppressed",
         "testSustainedSpatialLiftEscalationAndDisarmReset",
@@ -1789,7 +1793,7 @@
         "makeSyntheticFrame"
       ],
       "summary": "Module implementing PupilSecurityTests.swift",
-      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
+      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testGazeWarningReceptivenessAndPrivacyBlur, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
       "keywords": [
         "tests",
         "pupiltests",
@@ -1808,6 +1812,7 @@
         "testgazedwellaggregator",
         "testsecuritycoordinatorlifecycle",
         "testscreenshieldandblursettings",
+        "testgazewarningreceptivenessandprivacyblur",
         "testnotchdeterrentstyleoptions",
         "testtablebumpmotionspikesuppressed",
         "testsustainedspatialliftescalationanddisarmreset",

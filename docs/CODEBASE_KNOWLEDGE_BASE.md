@@ -36,7 +36,7 @@ flowchart TD
 | Tier | Name | Triggers | Native System Response |
 | :--- | :--- | :--- | :--- |
 | **Tier 1** | **Armed Deterrence** | User arms via `⌘A`, Menu Bar, or Settings header | Menu bar glyph switches to template aperture; IOKit hardware power polling, clamshell monitor, and Vision spatial lift anchor arm. |
-| **Tier 2** | **Gaze Warning** | Face detected in camera ROI with sustained gaze toward screen ($\ge 2.0\text{s}$) | Hardware notch subtly widens with a minimal dark pill status indicator (or logs silently). |
+| **Tier 2** | **Gaze Warning** | Face detected in camera ROI with sustained gaze toward screen ($\ge 0.5\text{–}3.0\text{s}$) | Hardware notch drops dark pill status indicator; optional instant Screen Privacy Blur obscures display content while gaze lingers. |
 | **Tier 3** | **Tamper Countdown** | MagSafe/USB-C charger unplugged (`IOPSCopyPowerSourcesInfo`), sustained spatial lift/occlusion ($> 1.2\text{s}$), or screen locked | Notch expands with amber countdown pill; enables keyboard focus for inline PIN or Touch ID biometric disarm. |
 | **Tier 4** | **PIN-Latched Siren** | Clamshell lid closed (`AppleClamshellState`), system wake while armed, or countdown expiry | Acquires `IOPMAssertion` to prevent sleep; `AVAudioEngine` synthesizes alternating 880Hz/660Hz square waves until valid PIN or Touch ID disarm. |
 
@@ -138,6 +138,7 @@ flowchart LR
 * **Frosted-Glass Blur & Obsidian Vignette**: Renders `NSVisualEffectView` with `.fullScreenUI` material (`state: .active`) and `.behindWindow` blending mode, darkening background windows with an obsidian radial vignette.
 * **Multi-Display Coverage**: Dynamically creates and updates full-screen shielding windows for every screen in `NSScreen.screens` on display connect/disconnect. The primary display hosts the interactive unlock dialog; secondary displays provide privacy blur and route focus to the primary dialog on click.
 * **Reliable Input & Focus Resilience**: The unlock card is presented front-and-center with immediate AppKit keyboard focus and an in-field clickable Delete (`delete.backward.fill`) button. Background clicks refocus the input field instead of vanishing into an unclickable limbo. The window intercepts Backspace/Delete (key codes 51/117), Return/Enter (36/76), and numeric keystrokes to ensure text editing and deletion always succeed.
+* **Screen Content Privacy Blur on Gaze**: When `blurScreenOnGaze` is enabled, any sustained unauthorized gaze detected by the Vision iris estimator instantly covers all displays with frosted-glass privacy blur. The moment the subject looks away, the screen cleanly unblurs without requiring a PIN.
 * **Notch Pass-Through Hit-Testing**: `NotchWindow` and `NotchHostingView` dynamically restrict hit-testing to the visible notch silhouette `activeNotchSize`. Clicks outside the notch bounds return `nil`, passing straight through to web pages, browser tabs, and desktop applications below.
 * **Zero Bypass Policy**: The screen cannot be dismissed, bypassed, or unblurred while armed until valid Keychain PIN or Touch ID verification transitions `SecurityCoordinator.state` back to `.disarmed`. During exit-delay arming or preview, pressing Escape or clicking Cancel dismisses the shield cleanly.
 
