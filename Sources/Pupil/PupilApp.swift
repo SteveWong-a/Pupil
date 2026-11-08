@@ -21,9 +21,6 @@ struct PupilApp: App {
     private var settingsWindow: some Scene {
         let open = openWindow
         let delegate = appDelegate
-        DispatchQueue.main.async {
-            delegate.bindOpenWindowAction { open(id: "settings") }
-        }
         return Window("Pupil Settings", id: "settings") {
             SettingsWindowView(coordinator: appDelegate.coordinator)
                 .onAppear {
@@ -292,7 +289,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         NSApp.setActivationPolicy(.regular)
         openSettingsWindowAction?()
         NSApp.activate(ignoringOtherApps: true)
-        for window in NSApp.windows where window.canBecomeMain {
+        for window in NSApp.windows where window.canBecomeMain && !(window is ScreenShieldWindow) {
             window.makeKeyAndOrderFront(nil)
         }
     }

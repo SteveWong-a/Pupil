@@ -35,7 +35,7 @@ public final class NotchWindow: NSPanel {
         ignoresMouseEvents = true
     }
 
-    public override var canBecomeKey: Bool { acceptsKey }
+    public override var canBecomeKey: Bool { acceptsKey && !ignoresMouseEvents }
     public override var canBecomeMain: Bool { false }
 }
 

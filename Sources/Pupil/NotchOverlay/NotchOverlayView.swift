@@ -212,11 +212,11 @@ public struct NotchOverlayView: View {
         .animation(.spring(response: 0.36, dampingFraction: 0.80), value: displayMode)
         .onAppear {
             let interactive = (displayMode == .compactArming || displayMode == .expandedTamper || displayMode == .expandedAlarm)
-            onRequestInteractive(interactive, currentPanelSize)
+            onRequestInteractive(interactive, displayMode == .hidden ? .zero : currentPanelSize)
         }
         .onChange(of: displayMode) { _, newMode in
             let interactive = (newMode == .compactArming || newMode == .expandedTamper || newMode == .expandedAlarm)
-            onRequestInteractive(interactive, currentPanelSize)
+            onRequestInteractive(interactive, newMode == .hidden ? .zero : currentPanelSize)
             if !interactive {
                 enteredPin = ""
             }

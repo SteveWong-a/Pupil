@@ -126,7 +126,11 @@ private final class SwipeMonitoringView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        installMonitorIfNeeded()
+        if window != nil {
+            installMonitorIfNeeded()
+        } else {
+            removeMonitor()
+        }
     }
 
     private func installMonitorIfNeeded() {
@@ -134,6 +138,13 @@ private final class SwipeMonitoringView: NSView {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
             self?.handleScroll(event)
             return event
+        }
+    }
+
+    private func removeMonitor() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
         }
     }
 

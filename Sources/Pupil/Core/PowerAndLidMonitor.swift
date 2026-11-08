@@ -38,6 +38,14 @@ public final class PowerAndLidMonitor {
     private var workspaceObservers: [NSObjectProtocol] = []
     private var sleepAssertionID: IOPMAssertionID = IOPMAssertionID(0)
 
+    public var isFastPolling: Bool = false {
+        didSet {
+            if oldValue != isFastPolling {
+                startSensorTimer()
+            }
+        }
+    }
+
     public init() {
         self.isOnACPower = Self.readACPowerState()
         self.isLidClosed = Self.readClamshellClosedState()
@@ -51,6 +59,7 @@ public final class PowerAndLidMonitor {
         workspaceObservers.append(
             wsCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor [weak self] in
+                    self?.pollHardwareSensors()
                     self?.onHardwareEvent?(.systemWillSleep)
                 }
             }
@@ -58,13 +67,19 @@ public final class PowerAndLidMonitor {
         workspaceObservers.append(
             wsCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor [weak self] in
+                    self?.pollHardwareSensors()
                     self?.onHardwareEvent?(.systemDidWake)
                 }
             }
         )
 
-        // Poll IOKit clamshell & power state every 150ms for instant hardware response
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+        startSensorTimer()
+    }
+
+    private func startSensorTimer() {
+        pollTimer?.invalidate()
+        let interval: TimeInterval = isFastPolling ? 0.15 : 3.0
+        pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.pollHardwareSensors()
             }

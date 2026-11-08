@@ -88,6 +88,7 @@ public final class ScreenShieldController {
         isVisible = true
 
         for window in shieldWindows {
+            window.ignoresMouseEvents = false
             window.alphaValue = 1.0
             window.orderFrontRegardless()
         }
@@ -97,20 +98,19 @@ public final class ScreenShieldController {
     }
 
     private func hideShield() {
-        guard isVisible else { return }
         isVisible = false
-
-        for window in shieldWindows {
-            window.orderOut(nil)
-            window.alphaValue = 0.0
-        }
+        destroyWindows()
     }
 
     private func reconfigureForCurrentScreens() {
-        guard isVisible, let coordinator else { return }
+        guard isVisible, let coordinator else {
+            destroyWindows()
+            return
+        }
         destroyWindows()
         for (index, screen) in NSScreen.screens.enumerated() {
             let window = makeShieldWindow(for: screen, isPrimary: index == 0, coordinator: coordinator)
+            window.ignoresMouseEvents = false
             window.alphaValue = 1.0
             window.orderFrontRegardless()
             shieldWindows.append(window)
@@ -136,7 +136,9 @@ public final class ScreenShieldController {
 
     private func destroyWindows() {
         for window in shieldWindows {
+            window.ignoresMouseEvents = true
             window.orderOut(nil)
+            window.contentView = nil
         }
         shieldWindows.removeAll()
     }

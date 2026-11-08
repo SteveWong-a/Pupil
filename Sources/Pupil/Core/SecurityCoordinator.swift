@@ -191,6 +191,7 @@ public final class SecurityCoordinator {
         state = .arming
         countdownSecondsRemaining = settings.exitDelaySeconds
         logEvent("Arming Started", detail: "\(settings.exitDelaySeconds)s exit delay started.")
+        powerMonitor.isFastPolling = true
         syncCameraLifecycle()
         onStateChanged?(state)
         onNotchUpdateNeeded?()
@@ -275,6 +276,7 @@ public final class SecurityCoordinator {
         isGazeWarningActive = false
         isShieldPreviewActive = false
         isInteractiveUnlockRequested = false
+        powerMonitor.isFastPolling = false
         stopArmedInputMonitoring()
         gazeDwellProgress = 0
         gazeAggregator.reset()

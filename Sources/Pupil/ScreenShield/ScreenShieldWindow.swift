@@ -40,7 +40,7 @@ public final class ScreenShieldWindow: NSPanel {
         isReleasedWhenClosed = false
         level = Self.shieldWindowLevel
         collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
-        ignoresMouseEvents = false
+        ignoresMouseEvents = true
         hidesOnDeactivate = false
     }
 
@@ -48,6 +48,10 @@ public final class ScreenShieldWindow: NSPanel {
     public override var canBecomeMain: Bool { true }
 
     public override func sendEvent(_ event: NSEvent) {
+        guard !ignoresMouseEvents, isVisible else {
+            super.sendEvent(event)
+            return
+        }
         if event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown {
             NotificationCenter.default.post(name: .screenShieldInputDetected, object: nil)
             NSApp.activate(ignoringOtherApps: true)

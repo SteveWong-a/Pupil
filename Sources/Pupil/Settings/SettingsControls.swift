@@ -602,12 +602,12 @@ public struct SettingsOptionTile<Preview: View>: View {
 public struct VisualEffectView: NSViewRepresentable {
     public var material: NSVisualEffectView.Material = .sidebar
     public var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
-    public var state: NSVisualEffectView.State = .followsWindowActiveState
+    public var state: NSVisualEffectView.State = .active
 
     public init(
         material: NSVisualEffectView.Material = .sidebar,
         blendingMode: NSVisualEffectView.BlendingMode = .behindWindow,
-        state: NSVisualEffectView.State = .followsWindowActiveState
+        state: NSVisualEffectView.State = .active
     ) {
         self.material = material
         self.blendingMode = blendingMode
@@ -620,7 +620,6 @@ public struct VisualEffectView: NSViewRepresentable {
         view.blendingMode = blendingMode
         view.state = state
         view.wantsLayer = true
-        view.applyFilterForCurrentAppearance()
         return view
     }
 
@@ -632,27 +631,14 @@ public struct VisualEffectView: NSViewRepresentable {
 }
 
 public final class AppearanceAdaptiveVisualEffectView: NSVisualEffectView {
-    private static let lightSaturationFilter: CIFilter? = {
-        let f = CIFilter(name: "CIColorControls")
-        f?.setValue(1.75, forKey: kCIInputSaturationKey)
-        return f
-    }()
-
-    private static let darkSaturationFilter: CIFilter? = {
-        let f = CIFilter(name: "CIColorControls")
-        f?.setValue(1.20, forKey: kCIInputSaturationKey)
-        return f
-    }()
-
-    public override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        applyFilterForCurrentAppearance()
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        state = .active
     }
 
-    public func applyFilterForCurrentAppearance() {
-        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let filter = isDark ? Self.darkSaturationFilter : Self.lightSaturationFilter
-        layer?.filters = filter.map { [$0] }
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        state = .active
     }
 }
 
@@ -701,8 +687,5 @@ public final class WindowConfiguringView: NSView {
 
         window.minSize = target
         window.maxSize = target
-
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
     }
 }

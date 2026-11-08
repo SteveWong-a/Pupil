@@ -34,7 +34,11 @@ public final class NotchOverlayController {
             repositionWindow()
             panel?.orderFrontRegardless()
         } else {
+            panel?.ignoresMouseEvents = true
+            panel?.activeNotchSize = .zero
             panel?.orderOut(nil)
+            panel?.contentView = nil
+            panel = nil
         }
     }
 
@@ -62,6 +66,14 @@ public final class NotchOverlayController {
     }
 
     public func repositionWindow() {
+        guard let coordinator, coordinator.state != .disarmed else {
+            panel?.ignoresMouseEvents = true
+            panel?.activeNotchSize = .zero
+            panel?.orderOut(nil)
+            panel?.contentView = nil
+            panel = nil
+            return
+        }
         guard let panel, let screen = NotchGeometry.preferredScreen() else { return }
         let geometry = NotchGeometry.forScreen(screen)
         let winSize = NotchGeometry.windowSize(for: geometry.style)
