@@ -28,7 +28,6 @@ public struct ScreenShieldView: View {
     private var isTamper: Bool { coordinator.state == .tamperPending }
     private var isGazePrivacyOnly: Bool {
         coordinator.state == .armed &&
-        !coordinator.settings.blurBackgroundWhenArmed &&
         !coordinator.isInteractiveUnlockRequested &&
         coordinator.isGazeWarningActive &&
         coordinator.settings.blurScreenOnGaze
@@ -36,48 +35,62 @@ public struct ScreenShieldView: View {
 
     public var body: some View {
         ZStack {
-            // 1. Heavy frosted obsidian privacy base: completely obscures screen content
-            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.96)
-                .ignoresSafeArea()
-
-            // 2. Native macOS ultra-thick material layer for rich glass depth
-            Rectangle()
-                .fill(.ultraThickMaterial)
-                .ignoresSafeArea()
-                .opacity(0.92)
-
-            // 3. Deep radial privacy vignette
-            RadialGradient(
-                colors: [
-                    Color.black.opacity(0.40),
-                    Color.black.opacity(0.85)
-                ],
-                center: .center,
-                startRadius: 160,
-                endRadius: 950
-            )
-            .ignoresSafeArea()
-
-            // 4. Click layer: clicking background refocuses the PIN prompt or triggers interactive unlock
-            Color.black.opacity(0.001)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if coordinator.state == .armed && !coordinator.isInteractiveUnlockRequested {
-                        coordinator.handleArmedUserInput()
-                    } else if isPrimary {
-                        isPinFocused = true
-                    } else {
-                        NotificationCenter.default.post(name: .screenShieldFocusPrimary, object: nil)
-                    }
+            if isGazePrivacyOnly {
+                // MARK: - Case 1: Gaze Detection (75% clean screen blur without gradient or warning notification)
+                ZStack {
+                    ScreenShieldBlurView(material: .fullScreenUI, blendingMode: .behindWindow, state: .active)
+                    Rectangle().fill(.ultraThickMaterial)
                 }
+                .opacity(0.75)
+                .ignoresSafeArea()
 
-            // 5. Centered modal dialog or transient gaze privacy capsule
-            if isPrimary && isPromptPresented {
-                if isGazePrivacyOnly {
-                    gazePrivacyCapsule
-                        .transition(.scale(scale: 0.95).combined(with: .opacity))
-                } else {
+                // Transparent full-screen click catcher: triggers PIN challenge on click
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        coordinator.handleArmedUserInput()
+                    }
+            } else {
+                // MARK: - Case 2: PIN Unlock Challenge / Tamper / Alarm
+                // 1. Heavy frosted obsidian privacy base: completely obscures screen content
+                Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.96)
+                    .ignoresSafeArea()
+
+                // 2. Native macOS ultra-thick material layer for rich glass depth
+                Rectangle()
+                    .fill(.ultraThickMaterial)
+                    .ignoresSafeArea()
+                    .opacity(0.92)
+
+                // 3. Deep radial privacy vignette
+                RadialGradient(
+                    colors: [
+                        Color.black.opacity(0.40),
+                        Color.black.opacity(0.85)
+                    ],
+                    center: .center,
+                    startRadius: 160,
+                    endRadius: 950
+                )
+                .ignoresSafeArea()
+
+                // 4. Click layer: clicking background refocuses the PIN prompt or triggers interactive unlock
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if coordinator.state == .armed && !coordinator.isInteractiveUnlockRequested {
+                            coordinator.handleArmedUserInput()
+                        } else if isPrimary {
+                            isPinFocused = true
+                        } else {
+                            NotificationCenter.default.post(name: .screenShieldFocusPrimary, object: nil)
+                        }
+                    }
+
+                // 5. Centered modal dialog
+                if isPrimary && isPromptPresented {
                     macOSPasswordWindow
                         .transition(
                             .asymmetric(
@@ -91,13 +104,13 @@ public struct ScreenShieldView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            if isPrimary {
+            if isPrimary && !isGazePrivacyOnly {
                 isPromptPresented = true
                 openPrompt()
             }
         }
         .onChange(of: coordinator.state) { _, _ in
-            if isPrimary {
+            if isPrimary && !isGazePrivacyOnly {
                 openPrompt()
             }
         }
@@ -140,50 +153,7 @@ public struct ScreenShieldView: View {
         }
     }
 
-    // MARK: - Small macOS Authentication Window & Gaze Privacy Capsule
-
-    private var gazePrivacyCapsule: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(PupilTheme.warningAmber.opacity(0.12))
-                    .frame(width: 52, height: 52)
-                    .overlay(
-                        Circle().strokeBorder(PupilTheme.warningAmber.opacity(0.35), lineWidth: 1)
-                    )
-
-                PupilEyeVectorView(
-                    isOpen: true,
-                    lookOffset: coordinator.eyeLookOffset,
-                    accentColor: PupilTheme.warningAmber,
-                    size: 26
-                )
-            }
-
-            VStack(spacing: 4) {
-                Text("Privacy Shield Active")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.white)
-
-                Text("Screen obscured while gaze is detected.\nLook away to dismiss, or press any key / click to unlock.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 270)
-            }
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(white: 0.11).opacity(0.95))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.55), radius: 32, x: 0, y: 14)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
+    // MARK: - Small macOS Authentication Window
 
     private var macOSPasswordWindow: some View {
         VStack(spacing: 16) {
@@ -451,5 +421,38 @@ public struct ScreenShieldView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) {
             withAnimation(.default) { shakeOffset = 0 }
         }
+    }
+}
+
+// MARK: - Native AppKit Behind-Window Blur Representable
+
+public struct ScreenShieldBlurView: NSViewRepresentable {
+    public var material: NSVisualEffectView.Material = .fullScreenUI
+    public var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    public var state: NSVisualEffectView.State = .active
+
+    public init(
+        material: NSVisualEffectView.Material = .fullScreenUI,
+        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow,
+        state: NSVisualEffectView.State = .active
+    ) {
+        self.material = material
+        self.blendingMode = blendingMode
+        self.state = state
+    }
+
+    public func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = state
+        view.wantsLayer = true
+        return view
+    }
+
+    public func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+        nsView.state = state
     }
 }
