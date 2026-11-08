@@ -86,6 +86,15 @@ public final class CameraManager: NSObject {
     public func startCapture(preferredDeviceID: String? = nil) {
         guard !isRunning else { return }
         let status = AVCaptureDevice.authorizationStatus(for: .video)
+        if status == .notDetermined {
+            Task {
+                let granted = await requestCameraAccess()
+                if granted {
+                    self.startCapture(preferredDeviceID: preferredDeviceID)
+                }
+            }
+            return
+        }
         guard status == .authorized else { return }
 
         let targetID = preferredDeviceID ?? PupilSettings.shared.preferredCameraID

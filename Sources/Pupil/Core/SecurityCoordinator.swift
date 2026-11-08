@@ -98,6 +98,9 @@ public final class SecurityCoordinator {
     private var armedGlobalInputMonitor: Any?
     private var armedLocalInputMonitor: Any?
     private var armedInputPollingTimer: Timer?
+    private var armedSettleWorkItem: DispatchWorkItem?
+    private var armedInputMonitoringActive = false
+    private var armedMonitoringStartTime: TimeInterval = 0
 
     public let settings: PupilSettings
     public let powerMonitor: PowerAndLidMonitor
@@ -294,11 +297,30 @@ public final class SecurityCoordinator {
         stopArmedInputMonitoring()
         guard settings.lockOnInputWhenArmed else { return }
 
+        // Settle grace period: give the user 2.0s after arming to release mouse/trackpad and step away.
+        // Prevents the arming click or closing of windows from triggering instant input lockdown!
+        armedInputMonitoringActive = false
+        let workItem = DispatchWorkItem { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.state == .armed, !self.isInteractiveUnlockRequested else { return }
+                self.activateArmedInputMonitors()
+            }
+        }
+        armedSettleWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
+    }
+
+    private func activateArmedInputMonitors() {
+        guard state == .armed, !isInteractiveUnlockRequested else { return }
+        armedInputMonitoringActive = true
+        armedMonitoringStartTime = Date().timeIntervalSince1970
+
         armedGlobalInputMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.handleArmedUserInput()
+                guard let self, self.armedInputMonitoringActive else { return }
+                self.handleArmedUserInput()
             }
         }
 
@@ -306,22 +328,33 @@ public final class SecurityCoordinator {
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]
         ) { [weak self] event in
             Task { @MainActor [weak self] in
-                self?.handleArmedUserInput()
+                guard let self, self.armedInputMonitoringActive else { return }
+                self.handleArmedUserInput()
             }
             return event
         }
 
         // Lightweight 10Hz CoreGraphics event source sentinel:
         // Catches any hardware key press or trackpad/mouse click system-wide across all apps and Spaces
+        // Only triggers on events that occurred strictly AFTER armedMonitoringStartTime!
+        let startTime = armedMonitoringStartTime
         armedInputPollingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                guard let self, self.state == .armed, !self.isInteractiveUnlockRequested else { return }
+                guard let self, self.state == .armed, self.armedInputMonitoringActive, !self.isInteractiveUnlockRequested else { return }
+                let now = Date().timeIntervalSince1970
+
                 let keyElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
                 let leftElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .leftMouseDown)
                 let rightElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .rightMouseDown)
                 let otherElapsed = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .otherMouseDown)
 
-                if keyElapsed < 0.15 || leftElapsed < 0.15 || rightElapsed < 0.15 || otherElapsed < 0.15 {
+                // Must have occurred strictly at or after startTime + 0.1s
+                let isNewKey = (now - keyElapsed) >= (startTime + 0.1)
+                let isNewLeft = (now - leftElapsed) >= (startTime + 0.1)
+                let isNewRight = (now - rightElapsed) >= (startTime + 0.1)
+                let isNewOther = (now - otherElapsed) >= (startTime + 0.1)
+
+                if isNewKey || isNewLeft || isNewRight || isNewOther {
                     self.handleArmedUserInput()
                 }
             }
@@ -329,6 +362,9 @@ public final class SecurityCoordinator {
     }
 
     private func stopArmedInputMonitoring() {
+        armedSettleWorkItem?.cancel()
+        armedSettleWorkItem = nil
+        armedInputMonitoringActive = false
         if let monitor = armedGlobalInputMonitor {
             NSEvent.removeMonitor(monitor)
             armedGlobalInputMonitor = nil
@@ -350,12 +386,6 @@ public final class SecurityCoordinator {
         onNotchUpdateNeeded?()
         NotificationCenter.default.post(name: .screenShieldSync, object: nil)
         NotificationCenter.default.post(name: .screenShieldOpenPrompt, object: nil)
-
-        if settings.allowTouchIDDisarm {
-            Task { @MainActor [weak self] in
-                _ = await self?.disarmWithTouchID()
-            }
-        }
     }
 
     // MARK: - Tamper & Alarm Escalation

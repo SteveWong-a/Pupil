@@ -49,6 +49,9 @@ public struct HeaderStatusButton: View {
         .popover(isPresented: $showDisarmPopover, arrowEdge: .bottom) {
             disarmPopoverContent
         }
+        .onChange(of: coordinator.state) { _, _ in
+            showDisarmPopover = false
+        }
     }
 
     private var statusLabel: String {
@@ -69,8 +72,10 @@ public struct HeaderStatusButton: View {
     private func handleTap() {
         switch coordinator.state {
         case .disarmed:
+            showDisarmPopover = false
             coordinator.startArming()
         case .arming:
+            showDisarmPopover = false
             coordinator.cancelArmingDuringExitDelay()
         case .armed, .tamperPending, .alarm:
             pinInput = ""

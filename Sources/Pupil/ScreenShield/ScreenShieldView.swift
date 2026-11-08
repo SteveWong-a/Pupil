@@ -413,11 +413,6 @@ public struct ScreenShieldView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             isPinFocused = true
         }
-        if coordinator.settings.allowTouchIDDisarm && !isGazePrivacyOnly {
-            Task {
-                _ = await coordinator.disarmWithTouchID()
-            }
-        }
     }
 
     private func closePrompt() {
