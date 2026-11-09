@@ -153,7 +153,7 @@ def main():
         chunks.append(chunk)
 
     output_data = {
-        "repository": "Pupil",
+        "repository": "pupil",
         "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
         "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
         "total_indexed_files": len(chunks),

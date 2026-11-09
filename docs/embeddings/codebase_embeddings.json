@@ -1,9 +1,9 @@
 {
-  "repository": "Pupil",
+  "repository": "pupil",
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
   "total_indexed_files": 36,
-  "total_source_lines": 7275,
+  "total_source_lines": 7862,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -38,17 +38,18 @@
       "disarmWithTouchID",
       "cancelArmingDuringExitDelay",
       "updatePin",
+      "recoverPinWithDeviceOwnerAuth",
       "performValidatedDisarm",
       "startArmedInputMonitoring",
+      "activateArmedInputMonitors",
       "stopArmedInputMonitoring",
-      "handleArmedUserInput",
-      "triggerTamper",
-      "enterAlarm"
+      "handleArmedUserInput"
     ],
     "Sources/Pupil/Core/PowerAndLidMonitor.swift": [
       "PowerHardwareEvent",
       "PowerAndLidMonitor",
       "startMonitoring",
+      "startSensorTimer",
       "stopMonitoring",
       "acquireSleepHoldAssertion",
       "releaseSleepHoldAssertion",
@@ -71,16 +72,20 @@
     "Sources/Pupil/Core/KeychainManager.swift": [
       "KeychainError",
       "StoredPinRecord",
+      "ActiveLAContextBox",
       "KeychainManager",
+      "set",
+      "clearIfMatching",
+      "invalidateCurrent",
+      "cancelPendingAuthentication",
       "isValidPinFormat",
       "enrollPin",
       "verifyPin",
       "clearEnrolledPin",
       "authenticateWithTouchID",
+      "authenticateDeviceOwner",
       "hashPin",
-      "constantTimeEqual",
-      "loadStoredRecord",
-      "saveStoredRecord"
+      "constantTimeEqual"
     ],
     "Sources/Pupil/Vision/VisionGazeDetector.swift": [
       "GazeSample",
@@ -160,11 +165,15 @@
     ],
     "Sources/Pupil/ScreenShield/ScreenShieldView.swift": [
       "ScreenShieldView",
+      "ScreenShieldBlurView",
       "handleDismissOrCancel",
       "openPrompt",
+      "submitMacPasswordRecovery",
       "closePrompt",
       "submitPin",
-      "triggerErrorShake"
+      "triggerErrorShake",
+      "makeNSView",
+      "updateNSView"
     ],
     "Sources/Pupil/ScreenShield/ScreenShieldController.swift": [
       "ScreenShieldController",
@@ -222,8 +231,6 @@
       "previewTint",
       "makeNSView",
       "updateNSView",
-      "viewDidChangeEffectiveAppearance",
-      "applyFilterForCurrentAppearance",
       "viewDidMoveToWindow",
       "configure"
     ],
@@ -258,6 +265,7 @@
       "updateNSView",
       "viewDidMoveToWindow",
       "installMonitorIfNeeded",
+      "removeMonitor",
       "handleScroll"
     ],
     "Sources/Pupil/Settings/Pages/GeneralSettingsPage.swift": [
@@ -291,6 +299,7 @@
       "testTableBumpMotionSpikeSuppressed",
       "testSustainedSpatialLiftEscalationAndDisarmReset",
       "testWebcamOcclusionAndVisionMotionDetector",
+      "testAutoTouchIDAndGazeOffStopsCameraAndBlur",
       "makeSyntheticFrame"
     ]
   },
@@ -321,7 +330,7 @@
       "file_path": "scripts/bundle-app.sh",
       "module_category": "App Bundle Packaging Script",
       "line_count": 71,
-      "content_hash": "62c00fc0b348eb0a",
+      "content_hash": "28cf21d43b16e7dd",
       "symbols": [],
       "summary": "!/usr/bin/env bash Generate retina AppIcon.icns if needed",
       "semantic_text": "File: scripts/bundle-app.sh\nModule: App Bundle Packaging Script\nSummary: !/usr/bin/env bash Generate retina AppIcon.icns if needed\nKey Symbols: \nContent Sample:\n#!/usr/bin/env bash\nset -euo pipefail\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROJECT_DIR=\"$(cd \"${SCRIPT_DIR}/..\" && pwd)\"\nBUILD_CONFIG=\"${1:-release}\"\n\necho \"==> Building Pupil (${BUILD_CONFIG})...\"\ncd \"${PROJECT_DIR}\"\nswift build -c \"${BUILD_CONFIG}\"\n\nBIN_PATH=\"$(swift build -c \"${BUILD_CONFIG}\" --show-bin-path)/Pupil\"\nAPP_BUNDLE=\"${PROJECT_DIR}/dist/Pupil.app\"\n\nrm -rf \"${APP_BUNDLE}\"\nmkdir -p \"${APP_BUNDLE}/Contents/MacOS\"\nmkdir -p \"${APP_BUNDLE}/Contents/Resources\"\n\n# Generate retina AppIcon.icns if needed\nif [[ ! -f \"${PROJECT_DIR}/Resources/AppIcon.icns\" ]]; then\n    echo \"==> Generating AppIcon.icns...\"\n    swift \"${PROJECT_DIR}/scripts/generate-icon.swift\"\nfi\ncp \"${PROJECT_DIR}/Resources/AppIcon.icns\" \"${APP_BUNDLE}/Contents/Resources/AppIcon.icns\"\n\ncp \"${BIN_PATH}\" \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\nchmod +x \"${APP_BUNDLE}/Contents/MacOS/Pupil\"\n\ncat > \"${APP_BUNDLE}/Contents/Info.plist\" <<'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>CFBundleDevelopmentRegion</key>\n    <string>en</string>\n    <key>CFBundleExecutable</key>\n    <string>Pupil</string>\n    <key>CFBundleIdentifier</key>\n    <string>com.pupil.security</string>\n    <key>CFBundleInfoDictionaryVersion</key>",
@@ -412,8 +421,8 @@
       "chunk_id": "pupil::Sources::Pupil::PupilApp.swift",
       "file_path": "Sources/Pupil/PupilApp.swift",
       "module_category": "App Lifecycle & Menu Bar",
-      "line_count": 287,
-      "content_hash": "1999f317c417d6e7",
+      "line_count": 304,
+      "content_hash": "acbfd244999a3183",
       "symbols": [
         "PupilApp",
         "AppDelegate",
@@ -431,7 +440,7 @@
         "triggerShieldPreview"
       ],
       "summary": "PupilApp.swift Pupil Main entry point, NSApplicationDelegate, and NSStatusItem menu bar integration, modeled directly after Glance's glanceApp.swift.",
-      "semantic_text": "File: Sources/Pupil/PupilApp.swift\nModule: App Lifecycle & Menu Bar\nSummary: PupilApp.swift Pupil Main entry point, NSApplicationDelegate, and NSStatusItem menu bar integration, modeled directly after Glance's glanceApp.swift.\nKey Symbols: PupilApp, AppDelegate, bindOpenWindowAction, applicationWillFinishLaunching, applicationDidFinishLaunching, applicationShouldHandleReopen, applicationShouldTerminate, setMenuBarVisibility, installStatusItemIfNeeded, menuNeedsUpdate, refreshStatusItemIconAndMenu, toggleArmState, triggerNotchPreview, triggerShieldPreview\nContent Sample:\n//\n//  PupilApp.swift\n//  Pupil\n//\n//  Main entry point, NSApplicationDelegate, and NSStatusItem menu bar integration,\n//  modeled directly after Glance's glanceApp.swift.\n//\n\nimport AppKit\nimport SwiftUI\n\n@main\nstruct PupilApp: App {\n    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some Scene {\n        settingsWindow\n    }\n\n    private var settingsWindow: some Scene {\n        let open = openWindow\n        let delegate = appDelegate\n        DispatchQueue.main.async {\n            delegate.bindOpenWindowAction { open(id: \"settings\") }\n        }\n        return Window(\"Pupil Settings\", id: \"settings\") {\n            SettingsWindowView(coordinator: appDelegate.coordinator)\n                .onAppear {\n                    delegate.bindOpenWindowAction { open(id: \"settings\") }\n                }\n        }\n        .defaultSize(SettingsMetrics.windowSize)\n        .windowStyle(.hiddenTitleBar)\n        .defaultPosition(.center)\n    }\n}\n\n@MainActor\npublic final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {",
+      "semantic_text": "File: Sources/Pupil/PupilApp.swift\nModule: App Lifecycle & Menu Bar\nSummary: PupilApp.swift Pupil Main entry point, NSApplicationDelegate, and NSStatusItem menu bar integration, modeled directly after Glance's glanceApp.swift.\nKey Symbols: PupilApp, AppDelegate, bindOpenWindowAction, applicationWillFinishLaunching, applicationDidFinishLaunching, applicationShouldHandleReopen, applicationShouldTerminate, setMenuBarVisibility, installStatusItemIfNeeded, menuNeedsUpdate, refreshStatusItemIconAndMenu, toggleArmState, triggerNotchPreview, triggerShieldPreview\nContent Sample:\n//\n//  PupilApp.swift\n//  Pupil\n//\n//  Main entry point, NSApplicationDelegate, and NSStatusItem menu bar integration,\n//  modeled directly after Glance's glanceApp.swift.\n//\n\nimport AppKit\nimport SwiftUI\n\n@main\nstruct PupilApp: App {\n    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate\n    @Environment(\\.openWindow) private var openWindow\n\n    var body: some Scene {\n        settingsWindow\n    }\n\n    private var settingsWindow: some Scene {\n        let open = openWindow\n        let delegate = appDelegate\n        return Window(\"Pupil Settings\", id: \"settings\") {\n            SettingsWindowView(coordinator: appDelegate.coordinator)\n                .onAppear {\n                    delegate.bindOpenWindowAction { open(id: \"settings\") }\n                }\n        }\n        .defaultSize(SettingsMetrics.windowSize)\n        .windowStyle(.hiddenTitleBar)\n        .defaultPosition(.center)\n    }\n}\n\n@MainActor\npublic final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {\n    public let coordinator = SecurityCoordinator()\n    private var notchOverlayController: NotchOverlayController?\n    private var screenShieldController: ScreenShieldController?",
       "keywords": [
         "sources",
         "pupil",
@@ -464,8 +473,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 599,
-      "content_hash": "d8f965b410350601",
+      "line_count": 714,
+      "content_hash": "1eadd414411ffdaa",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -477,15 +486,15 @@
         "disarmWithTouchID",
         "cancelArmingDuringExitDelay",
         "updatePin",
+        "recoverPinWithDeviceOwnerAuth",
         "performValidatedDisarm",
         "startArmedInputMonitoring",
+        "activateArmedInputMonitors",
         "stopArmedInputMonitoring",
-        "handleArmedUserInput",
-        "triggerTamper",
-        "enterAlarm"
+        "handleArmedUserInput"
       ],
       "summary": "SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM",
-      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, performValidatedDisarm, startArmedInputMonitoring, stopArmedInputMonitoring, handleArmedUserInput, triggerTamper, enterAlarm\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
+      "semantic_text": "File: Sources/Pupil/Core/SecurityCoordinator.swift\nModule: Core Security State Machine\nSummary: SecurityCoordinator.swift Pupil Deterministic security state machine and hardware/vision event coordinator. States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\nKey Symbols: SecurityState, TamperSource, SecurityEventRecord, SecurityCoordinator, startArming, completeArming, disarmWithPin, disarmWithTouchID, cancelArmingDuringExitDelay, updatePin, recoverPinWithDeviceOwnerAuth, performValidatedDisarm, startArmedInputMonitoring, activateArmedInputMonitors, stopArmedInputMonitoring, handleArmedUserInput\nContent Sample:\n//\n//  SecurityCoordinator.swift\n//  Pupil\n//\n//  Deterministic security state machine and hardware/vision event coordinator.\n//  States: DISARMED -> ARMING -> ARMED -> TAMPER_PENDING -> ALARM\n//\n\nimport AppKit\nimport Foundation\nimport Observation\n\npublic enum SecurityState: String, Codable, Sendable, CaseIterable {\n    case disarmed = \"DISARMED\"\n    case arming = \"ARMING\"\n    case armed = \"ARMED\"\n    case tamperPending = \"TAMPER_PENDING\"\n    case alarm = \"ALARM\"\n\n    public var label: String {\n        switch self {\n        case .disarmed: return \"Disarmed\"\n        case .arming: return \"Arming\u2026\"\n        case .armed: return \"Armed\"\n        case .tamperPending: return \"Tamper Countdown\"\n        case .alarm: return \"Alarm Latched\"\n        }\n    }\n\n    public var symbolName: String {\n        switch self {\n        case .disarmed: return \"eye\"\n        case .arming: return \"timer\"\n        case .armed: return \"eye.slash.fill\"\n        case .tamperPending: return \"exclamationmark.triangle.fill\"\n        case .alarm: return \"light.beacon.max.fill\"\n        }\n    }\n}\n",
       "keywords": [
         "sources",
         "pupil",
@@ -518,12 +527,13 @@
       "chunk_id": "pupil::Sources::Pupil::Core::PowerAndLidMonitor.swift",
       "file_path": "Sources/Pupil/Core/PowerAndLidMonitor.swift",
       "module_category": "IOKit Hardware Power & Lid Monitoring",
-      "line_count": 150,
-      "content_hash": "35efa59f069591ba",
+      "line_count": 165,
+      "content_hash": "d3a1053ad909133a",
       "symbols": [
         "PowerHardwareEvent",
         "PowerAndLidMonitor",
         "startMonitoring",
+        "startSensorTimer",
         "stopMonitoring",
         "acquireSleepHoldAssertion",
         "releaseSleepHoldAssertion",
@@ -532,7 +542,7 @@
         "readClamshellClosedState"
       ],
       "summary": "PowerAndLidMonitor.swift Pupil Native macOS IOKit hardware sensor monitor for: 1. AC Charger vs. Battery power transitions (IOPSCopyPowerSourcesInfo) 2. Physical MacBook lid clamshell state (IOPMrootDomain -> AppleClamshellState) 3. System sleep/wake notifications & IOPMAssertion sleep hold during active alarms",
-      "semantic_text": "File: Sources/Pupil/Core/PowerAndLidMonitor.swift\nModule: IOKit Hardware Power & Lid Monitoring\nSummary: PowerAndLidMonitor.swift Pupil Native macOS IOKit hardware sensor monitor for: 1. AC Charger vs. Battery power transitions (IOPSCopyPowerSourcesInfo) 2. Physical MacBook lid clamshell state (IOPMrootDomain -> AppleClamshellState) 3. System sleep/wake notifications & IOPMAssertion sleep hold during active alarms\nKey Symbols: PowerHardwareEvent, PowerAndLidMonitor, startMonitoring, stopMonitoring, acquireSleepHoldAssertion, releaseSleepHoldAssertion, pollHardwareSensors, readACPowerState, readClamshellClosedState\nContent Sample:\n//\n//  PowerAndLidMonitor.swift\n//  Pupil\n//\n//  Native macOS IOKit hardware sensor monitor for:\n//  1. AC Charger vs. Battery power transitions (IOPSCopyPowerSourcesInfo)\n//  2. Physical MacBook lid clamshell state (IOPMrootDomain -> AppleClamshellState)\n//  3. System sleep/wake notifications & IOPMAssertion sleep hold during active alarms\n//\n\nimport AppKit\nimport CoreFoundation\nimport Foundation\nimport IOKit\nimport IOKit.ps\nimport IOKit.pwr_mgt\nimport Observation\n\npublic enum PowerHardwareEvent: Sendable, Equatable {\n    case chargerUnplugged\n    case chargerPluggedIn\n    case lidClosed\n    case lidOpened\n    case systemWillSleep\n    case systemDidWake\n}\n\n@MainActor\n@Observable\npublic final class PowerAndLidMonitor {\n    public private(set) var isOnACPower: Bool = true\n    public private(set) var isLidClosed: Bool = false\n    public private(set) var isSleepAssertionActive: Bool = false\n\n    public var onHardwareEvent: ((PowerHardwareEvent) -> Void)?\n\n    private var pollTimer: Timer?\n    private var workspaceObservers: [NSObjectProtocol] = []\n    private var sleepAssertionID: IOPMAssertionID = IOPMAssertionID(0)\n",
+      "semantic_text": "File: Sources/Pupil/Core/PowerAndLidMonitor.swift\nModule: IOKit Hardware Power & Lid Monitoring\nSummary: PowerAndLidMonitor.swift Pupil Native macOS IOKit hardware sensor monitor for: 1. AC Charger vs. Battery power transitions (IOPSCopyPowerSourcesInfo) 2. Physical MacBook lid clamshell state (IOPMrootDomain -> AppleClamshellState) 3. System sleep/wake notifications & IOPMAssertion sleep hold during active alarms\nKey Symbols: PowerHardwareEvent, PowerAndLidMonitor, startMonitoring, startSensorTimer, stopMonitoring, acquireSleepHoldAssertion, releaseSleepHoldAssertion, pollHardwareSensors, readACPowerState, readClamshellClosedState\nContent Sample:\n//\n//  PowerAndLidMonitor.swift\n//  Pupil\n//\n//  Native macOS IOKit hardware sensor monitor for:\n//  1. AC Charger vs. Battery power transitions (IOPSCopyPowerSourcesInfo)\n//  2. Physical MacBook lid clamshell state (IOPMrootDomain -> AppleClamshellState)\n//  3. System sleep/wake notifications & IOPMAssertion sleep hold during active alarms\n//\n\nimport AppKit\nimport CoreFoundation\nimport Foundation\nimport IOKit\nimport IOKit.ps\nimport IOKit.pwr_mgt\nimport Observation\n\npublic enum PowerHardwareEvent: Sendable, Equatable {\n    case chargerUnplugged\n    case chargerPluggedIn\n    case lidClosed\n    case lidOpened\n    case systemWillSleep\n    case systemDidWake\n}\n\n@MainActor\n@Observable\npublic final class PowerAndLidMonitor {\n    public private(set) var isOnACPower: Bool = true\n    public private(set) var isLidClosed: Bool = false\n    public private(set) var isSleepAssertionActive: Bool = false\n\n    public var onHardwareEvent: ((PowerHardwareEvent) -> Void)?\n\n    private var pollTimer: Timer?\n    private var workspaceObservers: [NSObjectProtocol] = []\n    private var sleepAssertionID: IOPMAssertionID = IOPMAssertionID(0)\n",
       "keywords": [
         "sources",
         "pupil",
@@ -649,24 +659,28 @@
       "chunk_id": "pupil::Sources::Pupil::Core::KeychainManager.swift",
       "file_path": "Sources/Pupil/Core/KeychainManager.swift",
       "module_category": "macOS Keychain & Touch ID Security",
-      "line_count": 156,
-      "content_hash": "153770e1588a6de2",
+      "line_count": 210,
+      "content_hash": "b59aa75597556918",
       "symbols": [
         "KeychainError",
         "StoredPinRecord",
+        "ActiveLAContextBox",
         "KeychainManager",
+        "set",
+        "clearIfMatching",
+        "invalidateCurrent",
+        "cancelPendingAuthentication",
         "isValidPinFormat",
         "enrollPin",
         "verifyPin",
         "clearEnrolledPin",
         "authenticateWithTouchID",
+        "authenticateDeviceOwner",
         "hashPin",
-        "constantTimeEqual",
-        "loadStoredRecord",
-        "saveStoredRecord"
+        "constantTimeEqual"
       ],
       "summary": "KeychainManager.swift Pupil Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper. Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.",
-      "semantic_text": "File: Sources/Pupil/Core/KeychainManager.swift\nModule: macOS Keychain & Touch ID Security\nSummary: KeychainManager.swift Pupil Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper. Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.\nKey Symbols: KeychainError, StoredPinRecord, KeychainManager, isValidPinFormat, enrollPin, verifyPin, clearEnrolledPin, authenticateWithTouchID, hashPin, constantTimeEqual, loadStoredRecord, saveStoredRecord\nContent Sample:\n//\n//  KeychainManager.swift\n//  Pupil\n//\n//  Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper.\n//  Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.\n//\n\nimport CryptoKit\nimport Foundation\nimport LocalAuthentication\nimport Security\n\npublic enum KeychainError: LocalizedError {\n    case invalidPinFormat\n    case itemNotFound\n    case authenticationFailed\n\n    public var errorDescription: String? {\n        switch self {\n        case .invalidPinFormat:\n            return \"PIN must be 4 to 8 digits.\"\n        case .itemNotFound:\n            return \"No PIN is enrolled yet.\"\n        case .authenticationFailed:\n            return \"Authentication was cancelled or failed.\"\n        }\n    }\n}\n\npublic struct StoredPinRecord: Codable {\n    public let saltHex: String\n    public let digestHex: String\n\n    public init(saltHex: String, digestHex: String) {\n        self.saltHex = saltHex\n        self.digestHex = digestHex\n    }\n}\n",
+      "semantic_text": "File: Sources/Pupil/Core/KeychainManager.swift\nModule: macOS Keychain & Touch ID Security\nSummary: KeychainManager.swift Pupil Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper. Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.\nKey Symbols: KeychainError, StoredPinRecord, ActiveLAContextBox, KeychainManager, set, clearIfMatching, invalidateCurrent, cancelPendingAuthentication, isValidPinFormat, enrollPin, verifyPin, clearEnrolledPin, authenticateWithTouchID, authenticateDeviceOwner, hashPin, constantTimeEqual\nContent Sample:\n//\n//  KeychainManager.swift\n//  Pupil\n//\n//  Salted cryptographic SHA-256 PIN store and Touch ID (LocalAuthentication) helper.\n//  Zero plaintext storage; fast, non-blocking, and never triggers legacy Keychain password prompts.\n//\n\nimport CryptoKit\nimport Foundation\nimport LocalAuthentication\nimport Security\n\npublic enum KeychainError: LocalizedError {\n    case invalidPinFormat\n    case itemNotFound\n    case authenticationFailed\n\n    public var errorDescription: String? {\n        switch self {\n        case .invalidPinFormat:\n            return \"PIN must be 4 to 8 digits.\"\n        case .itemNotFound:\n            return \"No PIN is enrolled yet.\"\n        case .authenticationFailed:\n            return \"Authentication was cancelled or failed.\"\n        }\n    }\n}\n\npublic struct StoredPinRecord: Codable {\n    public let saltHex: String\n    public let digestHex: String\n\n    public init(saltHex: String, digestHex: String) {\n        self.saltHex = saltHex\n        self.digestHex = digestHex\n    }\n}\n",
       "keywords": [
         "sources",
         "pupil",
@@ -798,8 +812,8 @@
       "chunk_id": "pupil::Sources::Pupil::Vision::CameraManager.swift",
       "file_path": "Sources/Pupil/Vision/CameraManager.swift",
       "module_category": "AVFoundation 10 FPS Camera Capture",
-      "line_count": 190,
-      "content_hash": "264fe0a08bc977a1",
+      "line_count": 199,
+      "content_hash": "2400e044690d7887",
       "symbols": [
         "CameraDeviceInfo",
         "CameraManager",
@@ -934,14 +948,14 @@
       "file_path": "Sources/Pupil/NotchOverlay/NotchWindow.swift",
       "module_category": "Shielding-Level Non-activating NSPanel",
       "line_count": 77,
-      "content_hash": "88531bc10cbb1aa9",
+      "content_hash": "2e8d3d6fc38207d1",
       "symbols": [
         "NotchWindow",
         "NotchHostingView",
         "hitTest"
       ],
       "summary": "NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.",
-      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchWindow.swift\nModule: Shielding-Level Non-activating NSPanel\nSummary: NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.\nKey Symbols: NotchWindow, NotchHostingView, hitTest\nContent Sample:\n//\n//  NotchWindow.swift\n//  Pupil\n//\n//  Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1,\n//  joining all spaces and full-screen apps without stealing focus.\n//\n\nimport AppKit\nimport CoreGraphics\nimport SwiftUI\n\npublic final class NotchWindow: NSPanel {\n    private static let overlayWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel()) + 1\n    )\n\n    public var acceptsKey = false\n    public var activeNotchSize: CGSize = .zero\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless, .nonactivatingPanel],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.overlayWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = true\n    }\n\n    public override var canBecomeKey: Bool { acceptsKey }\n    public override var canBecomeMain: Bool { false }\n}",
+      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchWindow.swift\nModule: Shielding-Level Non-activating NSPanel\nSummary: NotchWindow.swift Pupil Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1, joining all spaces and full-screen apps without stealing focus.\nKey Symbols: NotchWindow, NotchHostingView, hitTest\nContent Sample:\n//\n//  NotchWindow.swift\n//  Pupil\n//\n//  Borderless, transparent NSPanel sitting at CGShieldingWindowLevel() + 1,\n//  joining all spaces and full-screen apps without stealing focus.\n//\n\nimport AppKit\nimport CoreGraphics\nimport SwiftUI\n\npublic final class NotchWindow: NSPanel {\n    private static let overlayWindowLevel = NSWindow.Level(\n        rawValue: Int(CGShieldingWindowLevel()) + 1\n    )\n\n    public var acceptsKey = false\n    public var activeNotchSize: CGSize = .zero\n\n    public init(contentRect: NSRect) {\n        super.init(\n            contentRect: contentRect,\n            styleMask: [.borderless, .nonactivatingPanel],\n            backing: .buffered,\n            defer: false\n        )\n        isOpaque = false\n        backgroundColor = .clear\n        hasShadow = false\n        isMovable = false\n        isReleasedWhenClosed = false\n        level = Self.overlayWindowLevel\n        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]\n        ignoresMouseEvents = true\n    }\n\n    public override var canBecomeKey: Bool { acceptsKey && !ignoresMouseEvents }\n    public override var canBecomeMain: Bool { false }\n}",
       "keywords": [
         "sources",
         "pupil",
@@ -975,7 +989,7 @@
       "file_path": "Sources/Pupil/NotchOverlay/NotchOverlayView.swift",
       "module_category": "Biometric Eye & Interactive Notch UI",
       "line_count": 417,
-      "content_hash": "488db6b9034cb63a",
+      "content_hash": "a078b4522cd58cf5",
       "symbols": [
         "PupilEyeVectorView",
         "NotchOverlayView",
@@ -1016,8 +1030,8 @@
       "chunk_id": "pupil::Sources::Pupil::NotchOverlay::NotchOverlayController.swift",
       "file_path": "Sources/Pupil/NotchOverlay/NotchOverlayController.swift",
       "module_category": "Notch Window Lifecycle Controller",
-      "line_count": 73,
-      "content_hash": "9740ef2721aaac2e",
+      "line_count": 85,
+      "content_hash": "879b20147bf3bcfa",
       "symbols": [
         "NotchOverlayController",
         "syncWithCoordinator",
@@ -1025,7 +1039,7 @@
         "repositionWindow"
       ],
       "summary": "NotchOverlayController.swift Pupil Owns and positions the borderless NotchWindow on the active NSScreen.",
-      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchOverlayController.swift\nModule: Notch Window Lifecycle Controller\nSummary: NotchOverlayController.swift Pupil Owns and positions the borderless NotchWindow on the active NSScreen.\nKey Symbols: NotchOverlayController, syncWithCoordinator, ensureWindowInstalled, repositionWindow\nContent Sample:\n//\n//  NotchOverlayController.swift\n//  Pupil\n//\n//  Owns and positions the borderless NotchWindow on the active NSScreen.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class NotchOverlayController {\n    private var panel: NotchWindow?\n    private weak var coordinator: SecurityCoordinator?\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.repositionWindow()\n            }\n        }\n    }\n\n    public func syncWithCoordinator() {\n        guard let coordinator else { return }\n        let shouldShow = coordinator.state != .disarmed\n        if shouldShow {\n            ensureWindowInstalled()\n            repositionWindow()\n            panel?.orderFrontRegardless()\n        } else {\n            panel?.orderOut(nil)\n        }\n    }\n",
+      "semantic_text": "File: Sources/Pupil/NotchOverlay/NotchOverlayController.swift\nModule: Notch Window Lifecycle Controller\nSummary: NotchOverlayController.swift Pupil Owns and positions the borderless NotchWindow on the active NSScreen.\nKey Symbols: NotchOverlayController, syncWithCoordinator, ensureWindowInstalled, repositionWindow\nContent Sample:\n//\n//  NotchOverlayController.swift\n//  Pupil\n//\n//  Owns and positions the borderless NotchWindow on the active NSScreen.\n//\n\nimport AppKit\nimport SwiftUI\n\n@MainActor\npublic final class NotchOverlayController {\n    private var panel: NotchWindow?\n    private weak var coordinator: SecurityCoordinator?\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n        NotificationCenter.default.addObserver(\n            forName: NSApplication.didChangeScreenParametersNotification,\n            object: nil,\n            queue: .main\n        ) { [weak self] _ in\n            Task { @MainActor [weak self] in\n                self?.repositionWindow()\n            }\n        }\n    }\n\n    public func syncWithCoordinator() {\n        guard let coordinator else { return }\n        let shouldShow = coordinator.state != .disarmed\n        if shouldShow {\n            ensureWindowInstalled()\n            repositionWindow()\n            panel?.orderFrontRegardless()\n        } else {\n            panel?.ignoresMouseEvents = true\n            panel?.activeNotchSize = .zero\n            panel?.orderOut(nil)\n            panel?.contentView = nil",
       "keywords": [
         "sources",
         "pupil",
@@ -1055,8 +1069,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldWindow.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldWindow.swift",
       "module_category": "Shielding-Level Privacy Blur NSPanel",
-      "line_count": 80,
-      "content_hash": "7eebcd818db0b82d",
+      "line_count": 84,
+      "content_hash": "95e43fd4998b109e",
       "symbols": [
         "ScreenShieldWindow",
         "sendEvent",
@@ -1096,18 +1110,22 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldView.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldView.swift",
       "module_category": "Full-Screen Blur & Central Biometric Card",
-      "line_count": 459,
-      "content_hash": "54aa0345f3518ab7",
+      "line_count": 599,
+      "content_hash": "376045b54ddd1e36",
       "symbols": [
         "ScreenShieldView",
+        "ScreenShieldBlurView",
         "handleDismissOrCancel",
         "openPrompt",
+        "submitMacPasswordRecovery",
         "closePrompt",
         "submitPin",
-        "triggerErrorShake"
+        "triggerErrorShake",
+        "makeNSView",
+        "updateNSView"
       ],
       "summary": "ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.",
-      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, handleDismissOrCancel, openPrompt, closePrompt, submitPin, triggerErrorShake\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n    private var isGazePrivacyOnly: Bool {\n        coordinator.state == .armed &&\n        !coordinator.settings.blurBackgroundWhenArmed &&\n        !coordinator.isInteractiveUnlockRequested &&\n        coordinator.isGazeWarningActive &&\n        coordinator.settings.blurScreenOnGaze\n    }\n\n    public var body: some View {\n        ZStack {\n            // 1. Deep frosted privacy scrim: high-opacity obsidian base that completely blocks screen snooping\n            Color(red: 0.06, green: 0.07, blue: 0.09).opacity(0.95)",
+      "semantic_text": "File: Sources/Pupil/ScreenShield/ScreenShieldView.swift\nModule: Full-Screen Blur & Central Biometric Card\nSummary: ScreenShieldView.swift Pupil SwiftUI content rendered in ScreenShieldWindow: Full-screen native AppKit visual effect blur with a subtle privacy vignette. When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\nKey Symbols: ScreenShieldView, ScreenShieldBlurView, handleDismissOrCancel, openPrompt, submitMacPasswordRecovery, closePrompt, submitPin, triggerErrorShake, makeNSView, updateNSView\nContent Sample:\n//\n//  ScreenShieldView.swift\n//  Pupil\n//\n//  SwiftUI content rendered in ScreenShieldWindow:\n//  Full-screen native AppKit visual effect blur with a subtle privacy vignette.\n//  When anything is clicked, opens a clean macOS authentication dialog in the center of the screen.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct ScreenShieldView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    public var isPrimary: Bool = true\n    @State private var isPromptPresented: Bool = true\n    @State private var pinInput = \"\"\n    @State private var hasError = false\n    @State private var shakeOffset: CGFloat = 0\n    @State private var isTouchIDInFlight = false\n    @State private var isRecoveryMode = false\n    @State private var recoveryNewPin = \"\"\n    @State private var recoveryError = false\n    @FocusState private var isPinFocused: Bool\n\n    public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {\n        self.coordinator = coordinator\n        self.isPrimary = isPrimary\n    }\n\n    private var isAlarm: Bool { coordinator.state == .alarm }\n    private var isTamper: Bool { coordinator.state == .tamperPending }\n    private var isGazePrivacyOnly: Bool {\n        coordinator.state == .armed &&\n        !coordinator.isInteractiveUnlockRequested &&\n        coordinator.isGazeWarningActive &&\n        coordinator.settings.gazeDetectionEnabled &&\n        coordinator.settings.blurScreenOnGaze\n    }\n",
       "keywords": [
         "sources",
         "pupil",
@@ -1140,8 +1158,8 @@
       "chunk_id": "pupil::Sources::Pupil::ScreenShield::ScreenShieldController.swift",
       "file_path": "Sources/Pupil/ScreenShield/ScreenShieldController.swift",
       "module_category": "Multi-Display Screen Shield Manager",
-      "line_count": 162,
-      "content_hash": "70190e099deab5a5",
+      "line_count": 146,
+      "content_hash": "11e7a97726bcbc5c",
       "symbols": [
         "ScreenShieldController",
         "syncWithCoordinator",
@@ -1226,8 +1244,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::PupilSettings.swift",
       "file_path": "Sources/Pupil/Settings/PupilSettings.swift",
       "module_category": "Observable Settings Store",
-      "line_count": 397,
-      "content_hash": "b16caea0ded1042b",
+      "line_count": 418,
+      "content_hash": "2a3ee72230ad4724",
       "symbols": [
         "GazeSensitivity",
         "NotchDeterrentStyle",
@@ -1313,8 +1331,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::SettingsControls.swift",
       "file_path": "Sources/Pupil/Settings/SettingsControls.swift",
       "module_category": "System Settings Components & Vibrancy",
-      "line_count": 708,
-      "content_hash": "6c5b7583548f34b5",
+      "line_count": 691,
+      "content_hash": "92a0e86925022044",
       "symbols": [
         "SettingsInfoButton",
         "SettingsRow",
@@ -1341,13 +1359,11 @@
         "previewTint",
         "makeNSView",
         "updateNSView",
-        "viewDidChangeEffectiveAppearance",
-        "applyFilterForCurrentAppearance",
         "viewDidMoveToWindow",
         "configure"
       ],
       "summary": "SettingsControls.swift Pupil Reusable macOS System Settings components, AppearanceAdaptiveVisualEffectView, and WindowConfigurator modeled directly after Glance's SettingsControls.",
-      "semantic_text": "File: Sources/Pupil/Settings/SettingsControls.swift\nModule: System Settings Components & Vibrancy\nSummary: SettingsControls.swift Pupil Reusable macOS System Settings components, AppearanceAdaptiveVisualEffectView, and WindowConfigurator modeled directly after Glance's SettingsControls.\nKey Symbols: SettingsInfoButton, SettingsRow, SettingsRowContent, SettingsGroup, SettingsGroupDivider, PupilToggle, SettingsMenuPickerPill, SettingsSteppedSliderRowContent, SettingsOptionSliderRowContent, SettingsPrimaryButton, PillActionButton, HoldToConfirmButton, SettingsActionRowContent, SettingsSectionTitle, SettingsCaption, SettingsLabeledOptionRow, SettingsOptionTile, VisualEffectView, AppearanceAdaptiveVisualEffectView, WindowConfigurator, WindowConfiguringView, alignment, previewTint, makeNSView, updateNSView, viewDidChangeEffectiveAppearance, applyFilterForCurrentAppearance, viewDidMoveToWindow, configure\nContent Sample:\n//\n//  SettingsControls.swift\n//  Pupil\n//\n//  Reusable macOS System Settings components, AppearanceAdaptiveVisualEffectView,\n//  and WindowConfigurator modeled directly after Glance's SettingsControls.\n//\n\nimport AppKit\nimport CoreImage\nimport SwiftUI\n\npublic struct SettingsInfoButton: View {\n    public let text: String\n    @State private var isPresented = false\n\n    public init(text: String) {\n        self.text = text\n    }\n\n    public var body: some View {\n        Button {\n            isPresented.toggle()\n        } label: {\n            Image(systemName: \"info.circle.fill\")\n                .font(.system(size: 12, weight: .regular))\n                .foregroundStyle(SettingsMetrics.textTertiary)\n        }\n        .buttonStyle(.plain)\n        .accessibilityLabel(\"More information\")\n        .popover(isPresented: $isPresented, arrowEdge: .bottom) {\n            Text(text)\n                .font(.system(size: 12))\n                .foregroundStyle(SettingsMetrics.textPrimary)\n                .fixedSize(horizontal: false, vertical: true)\n                .frame(width: 220, alignment: .leading)\n                .padding(12)\n        }\n    }\n}",
+      "semantic_text": "File: Sources/Pupil/Settings/SettingsControls.swift\nModule: System Settings Components & Vibrancy\nSummary: SettingsControls.swift Pupil Reusable macOS System Settings components, AppearanceAdaptiveVisualEffectView, and WindowConfigurator modeled directly after Glance's SettingsControls.\nKey Symbols: SettingsInfoButton, SettingsRow, SettingsRowContent, SettingsGroup, SettingsGroupDivider, PupilToggle, SettingsMenuPickerPill, SettingsSteppedSliderRowContent, SettingsOptionSliderRowContent, SettingsPrimaryButton, PillActionButton, HoldToConfirmButton, SettingsActionRowContent, SettingsSectionTitle, SettingsCaption, SettingsLabeledOptionRow, SettingsOptionTile, VisualEffectView, AppearanceAdaptiveVisualEffectView, WindowConfigurator, WindowConfiguringView, alignment, previewTint, makeNSView, updateNSView, viewDidMoveToWindow, configure\nContent Sample:\n//\n//  SettingsControls.swift\n//  Pupil\n//\n//  Reusable macOS System Settings components, AppearanceAdaptiveVisualEffectView,\n//  and WindowConfigurator modeled directly after Glance's SettingsControls.\n//\n\nimport AppKit\nimport CoreImage\nimport SwiftUI\n\npublic struct SettingsInfoButton: View {\n    public let text: String\n    @State private var isPresented = false\n\n    public init(text: String) {\n        self.text = text\n    }\n\n    public var body: some View {\n        Button {\n            isPresented.toggle()\n        } label: {\n            Image(systemName: \"info.circle.fill\")\n                .font(.system(size: 12, weight: .regular))\n                .foregroundStyle(SettingsMetrics.textTertiary)\n        }\n        .buttonStyle(.plain)\n        .accessibilityLabel(\"More information\")\n        .popover(isPresented: $isPresented, arrowEdge: .bottom) {\n            Text(text)\n                .font(.system(size: 12))\n                .foregroundStyle(SettingsMetrics.textPrimary)\n                .fixedSize(horizontal: false, vertical: true)\n                .frame(width: 220, alignment: .leading)\n                .padding(12)\n        }\n    }\n}",
       "keywords": [
         "sources",
         "pupil",
@@ -1498,8 +1514,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::HeaderStatusButton.swift",
       "file_path": "Sources/Pupil/Settings/HeaderStatusButton.swift",
       "module_category": "Live Header Status Pill & Popover",
-      "line_count": 136,
-      "content_hash": "c31355823f0a4daa",
+      "line_count": 141,
+      "content_hash": "c8593ce986bcaeaa",
       "symbols": [
         "HeaderStatusButton",
         "handleTap",
@@ -1539,8 +1555,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::SettingsWindowView.swift",
       "file_path": "Sources/Pupil/Settings/SettingsWindowView.swift",
       "module_category": "Settings Root View & Trackpad Gestures",
-      "line_count": 168,
-      "content_hash": "498019b23ec3bd79",
+      "line_count": 179,
+      "content_hash": "391b33bf83b08977",
       "symbols": [
         "SettingsWindowView",
         "SwipeDirection",
@@ -1551,10 +1567,11 @@
         "updateNSView",
         "viewDidMoveToWindow",
         "installMonitorIfNeeded",
+        "removeMonitor",
         "handleScroll"
       ],
       "summary": "SettingsWindowView.swift Pupil Root layout for Pupil Settings, modeled directly after Glance's SettingsWindowView: one `.sidebar` material behind the whole window, the selected page scrolling beneath a transparent progressive-blur header (traffic lights + live status pill) and a floating capsule tab bar pinned to the bottom.",
-      "semantic_text": "File: Sources/Pupil/Settings/SettingsWindowView.swift\nModule: Settings Root View & Trackpad Gestures\nSummary: SettingsWindowView.swift Pupil Root layout for Pupil Settings, modeled directly after Glance's SettingsWindowView: one `.sidebar` material behind the whole window, the selected page scrolling beneath a transparent progressive-blur header (traffic lights + live status pill) and a floating capsule tab bar pinned to the bottom.\nKey Symbols: SettingsWindowView, SwipeDirection, SettingsTabSwipeRecognizer, SwipeMonitoringView, selectAdjacentTab, makeNSView, updateNSView, viewDidMoveToWindow, installMonitorIfNeeded, handleScroll\nContent Sample:\n//\n//  SettingsWindowView.swift\n//  Pupil\n//\n//  Root layout for Pupil Settings, modeled directly after Glance's SettingsWindowView:\n//  one `.sidebar` material behind the whole window, the selected page scrolling beneath\n//  a transparent progressive-blur header (traffic lights + live status pill) and a\n//  floating capsule tab bar pinned to the bottom.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct SettingsWindowView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @State private var selection: SettingsTab = .general\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        ZStack {\n            VisualEffectView()\n            SettingsMetrics.windowTintColor\n            contentPage\n        }\n        .frame(maxWidth: .infinity, maxHeight: .infinity)\n        .ignoresSafeArea()\n        .background(WindowConfigurator())\n        .tint(PupilTheme.accent)\n        .background(\n            SettingsTabSwipeRecognizer { direction in\n                selectAdjacentTab(for: direction)\n            }\n        )\n    }\n\n    private var contentPage: some View {\n        ScrollView(.vertical, showsIndicators: false) {",
+      "semantic_text": "File: Sources/Pupil/Settings/SettingsWindowView.swift\nModule: Settings Root View & Trackpad Gestures\nSummary: SettingsWindowView.swift Pupil Root layout for Pupil Settings, modeled directly after Glance's SettingsWindowView: one `.sidebar` material behind the whole window, the selected page scrolling beneath a transparent progressive-blur header (traffic lights + live status pill) and a floating capsule tab bar pinned to the bottom.\nKey Symbols: SettingsWindowView, SwipeDirection, SettingsTabSwipeRecognizer, SwipeMonitoringView, selectAdjacentTab, makeNSView, updateNSView, viewDidMoveToWindow, installMonitorIfNeeded, removeMonitor, handleScroll\nContent Sample:\n//\n//  SettingsWindowView.swift\n//  Pupil\n//\n//  Root layout for Pupil Settings, modeled directly after Glance's SettingsWindowView:\n//  one `.sidebar` material behind the whole window, the selected page scrolling beneath\n//  a transparent progressive-blur header (traffic lights + live status pill) and a\n//  floating capsule tab bar pinned to the bottom.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct SettingsWindowView: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @State private var selection: SettingsTab = .general\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        ZStack {\n            VisualEffectView()\n            SettingsMetrics.windowTintColor\n            contentPage\n        }\n        .frame(maxWidth: .infinity, maxHeight: .infinity)\n        .ignoresSafeArea()\n        .background(WindowConfigurator())\n        .tint(PupilTheme.accent)\n        .background(\n            SettingsTabSwipeRecognizer { direction in\n                selectAdjacentTab(for: direction)\n            }\n        )\n    }\n\n    private var contentPage: some View {\n        ScrollView(.vertical, showsIndicators: false) {",
       "keywords": [
         "sources",
         "pupil",
@@ -1587,13 +1604,13 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::GeneralSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/GeneralSettingsPage.swift",
       "module_category": "General Settings Page",
-      "line_count": 186,
-      "content_hash": "3c794182e53550be",
+      "line_count": 262,
+      "content_hash": "1e16ddf316cb38f1",
       "symbols": [
         "GeneralSettingsPage"
       ],
       "summary": "GeneralSettingsPage.swift Pupil General settings page modeled directly after Glance's GeneralSettingsPage.",
-      "semantic_text": "File: Sources/Pupil/Settings/Pages/GeneralSettingsPage.swift\nModule: General Settings Page\nSummary: GeneralSettingsPage.swift Pupil General settings page modeled directly after Glance's GeneralSettingsPage.\nKey Symbols: GeneralSettingsPage\nContent Sample:\n//\n//  GeneralSettingsPage.swift\n//  Pupil\n//\n//  General settings page modeled directly after Glance's GeneralSettingsPage.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct GeneralSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    @State private var launchAtLogin = LaunchAtLogin.isEnabled\n    @State private var screens: [NSScreen] = NSScreen.screens\n    @State private var showPinEditor = false\n    @State private var newPinInput = \"\"\n    @State private var pinStatusMessage: String?\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Launch at login\") {\n                    PupilToggle(isOn: Binding(\n                        get: { launchAtLogin },\n                        set: { newValue in\n                            try? LaunchAtLogin.setEnabled(newValue)\n                            launchAtLogin = LaunchAtLogin.isEnabled\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                SettingsRowContent(title: \"Show in menu bar\") {\n                    PupilToggle(isOn: $settings.showsInMenuBar)\n                }",
+      "semantic_text": "File: Sources/Pupil/Settings/Pages/GeneralSettingsPage.swift\nModule: General Settings Page\nSummary: GeneralSettingsPage.swift Pupil General settings page modeled directly after Glance's GeneralSettingsPage.\nKey Symbols: GeneralSettingsPage\nContent Sample:\n//\n//  GeneralSettingsPage.swift\n//  Pupil\n//\n//  General settings page modeled directly after Glance's GeneralSettingsPage.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct GeneralSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    @State private var launchAtLogin = LaunchAtLogin.isEnabled\n    @State private var screens: [NSScreen] = NSScreen.screens\n    @State private var showPinEditor = false\n    @State private var showForgotPinPopover = false\n    @State private var newPinInput = \"\"\n    @State private var recoveryPinInput = \"\"\n    @State private var pinStatusMessage: String?\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Launch at login\") {\n                    PupilToggle(isOn: Binding(\n                        get: { launchAtLogin },\n                        set: { newValue in\n                            try? LaunchAtLogin.setEnabled(newValue)\n                            launchAtLogin = LaunchAtLogin.isEnabled\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                SettingsRowContent(title: \"Show in menu bar\") {",
       "keywords": [
         "sources",
         "pupil",
@@ -1622,15 +1639,15 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::GazeSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/GazeSettingsPage.swift",
       "module_category": "Gaze Settings & Live Calibration Page",
-      "line_count": 220,
-      "content_hash": "9a15e4ac911eeb91",
+      "line_count": 278,
+      "content_hash": "2891574bd43dbd1d",
       "symbols": [
         "GazeSettingsPage",
         "deterrentStylePreview",
         "togglePreview"
       ],
       "summary": "GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.",
-      "semantic_text": "File: Sources/Pupil/Settings/Pages/GazeSettingsPage.swift\nModule: Gaze Settings & Live Calibration Page\nSummary: GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\nKey Symbols: GazeSettingsPage, deterrentStylePreview, togglePreview\nContent Sample:\n//\n//  GazeSettingsPage.swift\n//  Pupil\n//\n//  Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage\n//  and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\n//\n\nimport AVFoundation\nimport SwiftUI\n\npublic struct GazeSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Gaze deterrence\") {\n                    PupilToggle(isOn: Binding(\n                        get: { settings.gazeDetectionEnabled },\n                        set: { val in\n                            settings.gazeDetectionEnabled = val\n                            coordinator.syncCameraLifecycle()\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                SettingsRowContent(\n                    title: \"Blur screen on gaze\",\n                    info: \"Instantly covers display content with frosted glass while someone looks at your screen, clearing when they look away.\"\n                ) {\n                    PupilToggle(isOn: $settings.blurScreenOnGaze)\n                }\n                SettingsGroupDivider()\n                cameraDevicePickerRow",
+      "semantic_text": "File: Sources/Pupil/Settings/Pages/GazeSettingsPage.swift\nModule: Gaze Settings & Live Calibration Page\nSummary: GazeSettingsPage.swift Pupil Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\nKey Symbols: GazeSettingsPage, deterrentStylePreview, togglePreview\nContent Sample:\n//\n//  GazeSettingsPage.swift\n//  Pupil\n//\n//  Camera & Gaze settings page modeled directly after Glance's CameraSettingsPage\n//  and RecognitionSettingsPage, featuring a real on-demand AVCaptureVideoPreviewLayer.\n//\n\nimport AVFoundation\nimport SwiftUI\n\npublic struct GazeSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsRowContent(title: \"Gaze deterrence\") {\n                    PupilToggle(isOn: Binding(\n                        get: { settings.gazeDetectionEnabled },\n                        set: { val in\n                            settings.gazeDetectionEnabled = val\n                            if !val {\n                                coordinator.setCameraPreviewRequested(false)\n                                coordinator.dismissGazeWarning()\n                            }\n                            coordinator.syncCameraLifecycle()\n                        }\n                    ))\n                }\n                SettingsGroupDivider()\n                SettingsRowContent(\n                    title: \"Blur screen on gaze\",\n                    info: \"Instantly covers display content with frosted glass while someone looks at your screen, clearing when they look away.\"\n                ) {",
       "keywords": [
         "sources",
         "pupil",
@@ -1743,8 +1760,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::AboutSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/AboutSettingsPage.swift",
       "module_category": "About & Privacy Page",
-      "line_count": 64,
-      "content_hash": "104b6596f9614641",
+      "line_count": 81,
+      "content_hash": "9de73c6aaeea61c5",
       "symbols": [
         "AboutSettingsPage"
       ],
@@ -1777,8 +1794,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 388,
-      "content_hash": "6eafbf9c96b734f4",
+      "line_count": 454,
+      "content_hash": "0171aa77302aab83",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
@@ -1790,10 +1807,11 @@
         "testTableBumpMotionSpikeSuppressed",
         "testSustainedSpatialLiftEscalationAndDisarmReset",
         "testWebcamOcclusionAndVisionMotionDetector",
+        "testAutoTouchIDAndGazeOffStopsCameraAndBlur",
         "makeSyntheticFrame"
       ],
       "summary": "Module implementing PupilSecurityTests.swift",
-      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testGazeWarningReceptivenessAndPrivacyBlur, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
+      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testGazeWarningReceptivenessAndPrivacyBlur, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, testAutoTouchIDAndGazeOffStopsCameraAndBlur, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
       "keywords": [
         "tests",
         "pupiltests",
@@ -1817,6 +1835,7 @@
         "testtablebumpmotionspikesuppressed",
         "testsustainedspatialliftescalationanddisarmreset",
         "testwebcamocclusionandvisionmotiondetector",
+        "testautotouchidandgazeoffstopscameraandblur",
         "makesyntheticframe"
       ]
     }

@@ -85,7 +85,7 @@ open "./dist/Pupil.app"
 ## Repository Structure
 
 ```
-Pupil/
+pupil/
 ├── Package.swift
 ├── scripts/
 │   └── bundle-app.sh
