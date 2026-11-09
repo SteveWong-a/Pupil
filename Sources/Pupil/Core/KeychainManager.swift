@@ -38,8 +38,43 @@ public struct StoredPinRecord: Codable {
     }
 }
 
+private final class ActiveLAContextBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var context: LAContext?
+
+    func set(_ newContext: LAContext) {
+        lock.lock()
+        let previous = context
+        context = newContext
+        lock.unlock()
+        previous?.invalidate()
+    }
+
+    func clearIfMatching(_ target: LAContext) {
+        lock.lock()
+        if context === target {
+            context = nil
+        }
+        lock.unlock()
+    }
+
+    func invalidateCurrent() {
+        lock.lock()
+        let current = context
+        context = nil
+        lock.unlock()
+        current?.invalidate()
+    }
+}
+
 public enum KeychainManager {
     nonisolated public static let storeKey = "pupil.saltedPinRecord"
+    nonisolated private static let activeContextBox = ActiveLAContextBox()
+
+    /// Immediately dismisses any active macOS Touch ID / LocalAuthentication system dialog.
+    nonisolated public static func cancelPendingAuthentication() {
+        activeContextBox.invalidateCurrent()
+    }
 
     nonisolated public static func isValidPinFormat(_ pin: String) -> Bool {
         let trimmed = pin.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -87,10 +122,13 @@ public enum KeychainManager {
 
     nonisolated public static func authenticateWithTouchID(reason: String) async -> Bool {
         let context = LAContext()
+        context.localizedCancelTitle = "Use PIN"
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             return false
         }
+        activeContextBox.set(context)
+        defer { activeContextBox.clearIfMatching(context) }
         do {
             return try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
         } catch {
@@ -105,6 +143,8 @@ public enum KeychainManager {
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
             return false
         }
+        activeContextBox.set(context)
+        defer { activeContextBox.clearIfMatching(context) }
         do {
             return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
         } catch {

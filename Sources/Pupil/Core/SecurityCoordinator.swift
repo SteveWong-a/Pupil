@@ -285,6 +285,7 @@ public final class SecurityCoordinator {
     }
 
     private func performValidatedDisarm(method: String) {
+        KeychainManager.cancelPendingAuthentication()
         countdownTimer?.invalidate()
         countdownTimer = nil
         countdownSecondsRemaining = 0

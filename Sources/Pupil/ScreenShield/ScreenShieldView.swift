@@ -142,8 +142,19 @@ public struct ScreenShieldView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .screenShieldDigitTyped)) { notif in
             if isPrimary, let digit = notif.object as? String, pinInput.count < 8 {
+                KeychainManager.cancelPendingAuthentication()
                 pinInput.append(digit)
                 hasError = false
+            }
+        }
+        .onChange(of: pinInput) { _, newValue in
+            if !newValue.isEmpty {
+                KeychainManager.cancelPendingAuthentication()
+            }
+        }
+        .onDisappear {
+            if isPrimary {
+                KeychainManager.cancelPendingAuthentication()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .screenShieldInputDetected)) { _ in
@@ -526,6 +537,7 @@ public struct ScreenShieldView: View {
         let success = coordinator.disarmWithPin(pinInput)
         pinInput = ""
         if success {
+            KeychainManager.cancelPendingAuthentication()
             hasError = false
             withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
                 isPromptPresented = false
