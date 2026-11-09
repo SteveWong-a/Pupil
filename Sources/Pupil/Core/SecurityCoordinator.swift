@@ -600,6 +600,12 @@ public final class SecurityCoordinator {
 
     public func setCameraPreviewRequested(_ requested: Bool) {
         isCameraPreviewRequested = requested
+        if !requested && !isMonitoring {
+            gazeDwellProgress = 0
+            latestGazeScore = 0
+            activeFaceCount = 0
+            gazeAggregator.reset()
+        }
         syncCameraLifecycle()
     }
 

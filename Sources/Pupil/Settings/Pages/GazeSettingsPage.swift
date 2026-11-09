@@ -143,21 +143,65 @@ public struct GazeSettingsPage: View {
         }
     }
 
+    private var dwellPercentage: Int {
+        Int((min(1.0, max(0.0, coordinator.gazeDwellProgress)) * 100).rounded())
+    }
+
     private var liveCameraPreviewCard: some View {
         VStack(spacing: 0) {
-            ZStack {
-                if coordinator.isCameraPreviewRequested {
-                    CameraPreviewView(session: coordinator.cameraManager.captureSessionReference)
-                        .transition(.opacity)
-                } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "video.slash")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundStyle(SettingsMetrics.textTertiary)
-                        Text("Preview is off")
-                            .font(.system(size: 12))
-                            .foregroundStyle(SettingsMetrics.textSecondary)
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    if coordinator.isCameraPreviewRequested {
+                        CameraPreviewView(session: coordinator.cameraManager.captureSessionReference)
+                            .transition(.opacity)
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "video.slash")
+                                .font(.system(size: 20, weight: .regular))
+                                .foregroundStyle(SettingsMetrics.textTertiary)
+                            Text("Preview is off")
+                                .font(.system(size: 12))
+                                .foregroundStyle(SettingsMetrics.textSecondary)
+                        }
                     }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 196)
+
+                if coordinator.isCameraPreviewRequested {
+                    HStack(spacing: 8) {
+                        Text("Gaze Dwell")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.80))
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color.white.opacity(0.18))
+                                Capsule()
+                                    .fill(dwellPercentage >= 100 ? PupilTheme.warningAmber : PupilTheme.armedGreen)
+                                    .frame(width: geo.size.width * CGFloat(min(1.0, max(0.0, coordinator.gazeDwellProgress))))
+                                    .animation(.easeOut(duration: 0.12), value: coordinator.gazeDwellProgress)
+                            }
+                        }
+                        .frame(width: 56, height: 6)
+
+                        Text("\(dwellPercentage)%")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(dwellPercentage >= 100 ? PupilTheme.warningAmber : Color.white)
+                            .frame(width: 34, alignment: .trailing)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.black.opacity(0.68))
+                            .overlay(
+                                Capsule()
+                                    .strokeBorder(Color.white.opacity(0.16), lineWidth: 1)
+                            )
+                    )
+                    .padding(10)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -178,13 +222,23 @@ public struct GazeSettingsPage: View {
 
             HStack {
                 if coordinator.isCameraPreviewRequested {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(coordinator.activeFaceCount > 0 ? PupilTheme.armedGreen : SettingsMetrics.textTertiary)
-                            .frame(width: 6, height: 6)
-                        Text(coordinator.activeFaceCount > 0 ? "Face detected" : "No face detected")
-                            .font(.system(size: 12))
-                            .foregroundStyle(SettingsMetrics.textSecondary)
+                    HStack(spacing: 10) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(coordinator.activeFaceCount > 0 ? PupilTheme.armedGreen : SettingsMetrics.textTertiary)
+                                .frame(width: 6, height: 6)
+                            Text(coordinator.activeFaceCount > 0 ? "Face detected" : "No face detected")
+                                .font(.system(size: 12))
+                                .foregroundStyle(SettingsMetrics.textSecondary)
+                        }
+
+                        Text("•")
+                            .font(.system(size: 11))
+                            .foregroundStyle(SettingsMetrics.textTertiary)
+
+                        Text("Dwell: \(dwellPercentage)%")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(dwellPercentage >= 100 ? PupilTheme.warningAmber : SettingsMetrics.textPrimary)
                     }
                 }
                 Spacer()
