@@ -386,9 +386,9 @@ struct PupilSecurityTests {
         }
     }
 
-    @Test("Phone 2FA TOTP recovery, Auto Touch ID setting, and Gaze Detection off stops camera/blur")
+    @Test("Auto Touch ID setting and Gaze Detection off stops camera/blur")
     @MainActor
-    func testTOTPPhone2FAAndGazeOffStopsCameraAndBlur() throws {
+    func testAutoTouchIDAndGazeOffStopsCameraAndBlur() throws {
         let suiteName = "PupilTest-Recovery-\(UUID().uuidString)"
         guard let isolatedDefaults = UserDefaults(suiteName: suiteName) else {
             Issue.record("Failed to create isolated UserDefaults")
@@ -405,29 +405,8 @@ struct PupilSecurityTests {
         #expect(settings.autoPromptTouchID == false)
         settings.autoPromptTouchID = true
 
-        // 2. Verify Phone 2FA TOTP secret, URI, and 6-digit verification
-        let secret = KeychainManager.ensureTOTPSecret()
-        #expect(secret.count >= 16)
-        let uri = KeychainManager.totpProvisioningURI(secretBase32: secret)
-        #expect(uri.hasPrefix("otpauth://totp/"))
-
-        let now = Date()
-        let code = try #require(KeychainManager.currentTOTPCode(at: now, secretBase32: secret))
-        #expect(code.count == 6)
-        #expect(KeychainManager.verifyTOTPCode(code, at: now, secretBase32: secret) == true)
-        #expect(KeychainManager.verifyTOTPCode("000000", at: now, secretBase32: secret) == (code == "000000"))
-
-        // 3. Verify disarming and resetting PIN via Phone 2FA TOTP code
-        try KeychainManager.enrollPin("1111")
-        coordinator.startArming(immediate: true)
-        #expect(coordinator.state == .armed)
-
-        let resetOk = coordinator.disarmOrResetWithTOTP(code: code, newPin: "5678")
-        #expect(resetOk == true)
-        #expect(coordinator.state == .disarmed)
-        #expect(KeychainManager.verifyPin("5678") == true)
-
-        // 4. Verify turning off gazeDetectionEnabled dismisses gaze warning, stops camera, and prevents gaze blur
+        // 2. Verify turning off gazeDetectionEnabled dismisses gaze warning, stops camera, and prevents gaze blur
+        try KeychainManager.enrollPin("5678")
         coordinator.startArming(immediate: true)
         #expect(coordinator.state == .armed)
         coordinator.simulateGazeWarning()

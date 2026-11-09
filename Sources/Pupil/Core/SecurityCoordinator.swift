@@ -268,39 +268,18 @@ public final class SecurityCoordinator {
         logEvent("PIN Updated", detail: "Security PIN updated in macOS Keychain.")
     }
 
-    @discardableResult
-    public func disarmOrResetWithTOTP(code: String, newPin: String? = nil) -> Bool {
-        guard KeychainManager.verifyTOTPCode(code) else {
-            logEvent("2FA Recovery Failed", detail: "Invalid 6-digit phone authenticator code.")
-            if settings.hapticFeedbackEnabled {
-                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-            }
-            return false
-        }
+    public func recoverPinWithDeviceOwnerAuth(newPin: String? = nil) async -> Bool {
+        let verified = await KeychainManager.authenticateDeviceOwner(
+            reason: "Verify Mac login password or Touch ID to unlock or reset your Pupil PIN"
+        )
+        guard verified else { return false }
         if let newPin, KeychainManager.isValidPinFormat(newPin) {
             try? KeychainManager.enrollPin(newPin)
             hasEnrolledPin = KeychainManager.hasEnrolledPin
-            logEvent("PIN Reset via Phone 2FA", detail: "Security PIN reset using 6-digit phone 2FA code.")
+            logEvent("PIN Reset via Mac Password", detail: "Security PIN reset after macOS owner verification.")
         }
         if state != .disarmed || isInteractiveUnlockRequested {
-            performValidatedDisarm(method: "Phone 2FA")
-        }
-        return true
-    }
-
-    public func recoverPinWithDeviceOwnerAuth(newPin: String? = nil) async -> Bool {
-        let verified = await KeychainManager.authenticateDeviceOwner(
-            reason: "Verify Mac owner identity to reset your forgotten Pupil PIN"
-        )
-        guard verified else { return false }
-        let targetPin = (newPin != nil && KeychainManager.isValidPinFormat(newPin!)) ? newPin! : nil
-        if let targetPin {
-            try? KeychainManager.enrollPin(targetPin)
-            hasEnrolledPin = KeychainManager.hasEnrolledPin
-            logEvent("PIN Reset via Mac Owner Auth", detail: "Security PIN reset after macOS owner verification.")
-        }
-        if state != .disarmed || isInteractiveUnlockRequested {
-            performValidatedDisarm(method: "Mac Owner Recovery")
+            performValidatedDisarm(method: "Mac Password")
         }
         return true
     }

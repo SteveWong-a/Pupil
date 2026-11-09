@@ -19,7 +19,6 @@ public struct ScreenShieldView: View {
     @State private var shakeOffset: CGFloat = 0
     @State private var isTouchIDInFlight = false
     @State private var isRecoveryMode = false
-    @State private var totpCodeInput = ""
     @State private var recoveryNewPin = ""
     @State private var recoveryError = false
     @FocusState private var isPinFocused: Bool
@@ -191,7 +190,6 @@ public struct ScreenShieldView: View {
         Button {
             withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                 isRecoveryMode = true
-                totpCodeInput = ""
                 recoveryNewPin = ""
                 recoveryError = false
             }
@@ -206,13 +204,13 @@ public struct ScreenShieldView: View {
     private var recoveryView: some View {
         VStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("6-Digit Phone 2FA Code")
+                Text("New PIN (4–8 digits, optional)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.68))
 
-                TextField("123456", text: $totpCodeInput)
+                SecureField("Leave empty to unlock only", text: $recoveryNewPin)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(Color.white)
                     .padding(.horizontal, 10)
                     .frame(height: 30)
@@ -228,68 +226,29 @@ public struct ScreenShieldView: View {
                             )
                     )
                     .onSubmit {
-                        submitRecoveryTOTP()
+                        submitMacPasswordRecovery()
                     }
-
-                SecureField("Optional new PIN (4–8 digits)", text: $recoveryNewPin)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(Color.white)
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.black.opacity(0.32))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-                    )
             }
 
             if recoveryError {
-                Text("Invalid 2FA code or new PIN format")
+                Text("Mac password verification failed or invalid PIN")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(PupilTheme.alarmRed)
             }
 
-            Button(action: submitRecoveryTOTP) {
-                Text(recoveryNewPin.isEmpty ? "Unlock with 2FA Code" : "Reset PIN & Unlock")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.white)
-                    )
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                Task {
-                    let targetPin = KeychainManager.isValidPinFormat(recoveryNewPin) ? recoveryNewPin : "1234"
-                    let ok = await coordinator.recoverPinWithDeviceOwnerAuth(newPin: targetPin)
-                    if ok {
-                        isRecoveryMode = false
-                    } else {
-                        recoveryError = true
-                        triggerErrorShake()
-                    }
-                }
-            } label: {
+            Button(action: submitMacPasswordRecovery) {
                 HStack(spacing: 5) {
                     Image(systemName: "key.fill")
                         .font(.system(size: 11))
-                    Text("Unlock with Mac Password")
-                        .font(.system(size: 11, weight: .medium))
+                    Text(recoveryNewPin.isEmpty ? "Unlock with Mac Password" : "Reset PIN with Mac Password")
+                        .font(.system(size: 12, weight: .semibold))
                 }
-                .foregroundStyle(Color.white.opacity(0.85))
+                .foregroundStyle(Color.black)
                 .frame(maxWidth: .infinity)
-                .frame(height: 26)
+                .frame(height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.white.opacity(0.10))
+                        .fill(Color.white)
                 )
             }
             .buttonStyle(.plain)
@@ -532,27 +491,26 @@ public struct ScreenShieldView: View {
         }
     }
 
-    private func submitRecoveryTOTP() {
+    private func submitMacPasswordRecovery() {
         if !recoveryNewPin.isEmpty && !KeychainManager.isValidPinFormat(recoveryNewPin) {
             recoveryError = true
             triggerErrorShake()
             return
         }
-        let ok = coordinator.disarmOrResetWithTOTP(
-            code: totpCodeInput,
-            newPin: recoveryNewPin.isEmpty ? nil : recoveryNewPin
-        )
-        if ok {
-            totpCodeInput = ""
-            recoveryNewPin = ""
-            recoveryError = false
-            isRecoveryMode = false
-            withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
-                isPromptPresented = false
+        let targetPin: String? = recoveryNewPin.isEmpty ? nil : recoveryNewPin
+        Task {
+            let ok = await coordinator.recoverPinWithDeviceOwnerAuth(newPin: targetPin)
+            if ok {
+                recoveryNewPin = ""
+                recoveryError = false
+                isRecoveryMode = false
+                withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                    isPromptPresented = false
+                }
+            } else {
+                recoveryError = true
+                triggerErrorShake()
             }
-        } else {
-            recoveryError = true
-            triggerErrorShake()
         }
     }
 
