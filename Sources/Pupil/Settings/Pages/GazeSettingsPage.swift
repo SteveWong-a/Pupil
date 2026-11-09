@@ -25,6 +25,10 @@ public struct GazeSettingsPage: View {
                         get: { settings.gazeDetectionEnabled },
                         set: { val in
                             settings.gazeDetectionEnabled = val
+                            if !val {
+                                coordinator.setCameraPreviewRequested(false)
+                                coordinator.dismissGazeWarning()
+                            }
                             coordinator.syncCameraLifecycle()
                         }
                     ))

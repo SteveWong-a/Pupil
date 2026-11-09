@@ -17,6 +17,11 @@ public struct ScreenShieldView: View {
     @State private var pinInput = ""
     @State private var hasError = false
     @State private var shakeOffset: CGFloat = 0
+    @State private var isTouchIDInFlight = false
+    @State private var isRecoveryMode = false
+    @State private var totpCodeInput = ""
+    @State private var recoveryNewPin = ""
+    @State private var recoveryError = false
     @FocusState private var isPinFocused: Bool
 
     public init(coordinator: SecurityCoordinator, isPrimary: Bool = true) {
@@ -30,6 +35,7 @@ public struct ScreenShieldView: View {
         coordinator.state == .armed &&
         !coordinator.isInteractiveUnlockRequested &&
         coordinator.isGazeWarningActive &&
+        coordinator.settings.gazeDetectionEnabled &&
         coordinator.settings.blurScreenOnGaze
     }
 
@@ -159,8 +165,13 @@ public struct ScreenShieldView: View {
         VStack(spacing: 16) {
             lockBadgeView
             titleSubtitleView
-            pinInputField
-            actionButtonsView
+            if isRecoveryMode {
+                recoveryView
+            } else {
+                pinInputField
+                actionButtonsView
+                forgotPinFooter
+            }
         }
         .padding(22)
         .frame(width: 288)
@@ -174,6 +185,127 @@ public struct ScreenShieldView: View {
                 .shadow(color: Color.black.opacity(0.55), radius: 32, x: 0, y: 14)
         )
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var forgotPinFooter: some View {
+        Button {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                isRecoveryMode = true
+                totpCodeInput = ""
+                recoveryNewPin = ""
+                recoveryError = false
+            }
+        } label: {
+            Text("Forgot PIN?")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.52))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var recoveryView: some View {
+        VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("6-Digit Phone 2FA Code")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.68))
+
+                TextField("123456", text: $totpCodeInput)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.black.opacity(0.42))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(
+                                recoveryError ? PupilTheme.alarmRed : Color.white.opacity(0.18),
+                                lineWidth: 1
+                            )
+                    )
+                    .onSubmit {
+                        submitRecoveryTOTP()
+                    }
+
+                SecureField("Optional new PIN (4–8 digits)", text: $recoveryNewPin)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.black.opacity(0.32))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            }
+
+            if recoveryError {
+                Text("Invalid 2FA code or new PIN format")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(PupilTheme.alarmRed)
+            }
+
+            Button(action: submitRecoveryTOTP) {
+                Text(recoveryNewPin.isEmpty ? "Unlock with 2FA Code" : "Reset PIN & Unlock")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.white)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                Task {
+                    let targetPin = KeychainManager.isValidPinFormat(recoveryNewPin) ? recoveryNewPin : "1234"
+                    let ok = await coordinator.recoverPinWithDeviceOwnerAuth(newPin: targetPin)
+                    if ok {
+                        isRecoveryMode = false
+                    } else {
+                        recoveryError = true
+                        triggerErrorShake()
+                    }
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "key.fill")
+                        .font(.system(size: 11))
+                    Text("Unlock with Mac Password")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundStyle(Color.white.opacity(0.85))
+                .frame(maxWidth: .infinity)
+                .frame(height: 26)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.white.opacity(0.10))
+                )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                    isRecoveryMode = false
+                    recoveryError = false
+                }
+            } label: {
+                Text("Back to PIN")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.55))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var lockBadgeView: some View {
@@ -379,9 +511,48 @@ public struct ScreenShieldView: View {
         withAnimation(.spring(response: 0.30, dampingFraction: 0.84)) {
             isPromptPresented = true
             hasError = false
+            isRecoveryMode = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             isPinFocused = true
+        }
+        let shouldAutoTouchID = !isGazePrivacyOnly &&
+            !coordinator.isShieldPreviewActive &&
+            (coordinator.isInteractiveUnlockRequested || isTamper || isAlarm) &&
+            coordinator.settings.allowTouchIDDisarm &&
+            coordinator.settings.autoPromptTouchID &&
+            !isTouchIDInFlight
+
+        if shouldAutoTouchID {
+            isTouchIDInFlight = true
+            Task {
+                _ = await coordinator.disarmWithTouchID()
+                isTouchIDInFlight = false
+            }
+        }
+    }
+
+    private func submitRecoveryTOTP() {
+        if !recoveryNewPin.isEmpty && !KeychainManager.isValidPinFormat(recoveryNewPin) {
+            recoveryError = true
+            triggerErrorShake()
+            return
+        }
+        let ok = coordinator.disarmOrResetWithTOTP(
+            code: totpCodeInput,
+            newPin: recoveryNewPin.isEmpty ? nil : recoveryNewPin
+        )
+        if ok {
+            totpCodeInput = ""
+            recoveryNewPin = ""
+            recoveryError = false
+            isRecoveryMode = false
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                isPromptPresented = false
+            }
+        } else {
+            recoveryError = true
+            triggerErrorShake()
         }
     }
 

@@ -386,6 +386,76 @@ struct PupilSecurityTests {
         }
     }
 
+    @Test("Phone 2FA TOTP recovery, Auto Touch ID setting, and Gaze Detection off stops camera/blur")
+    @MainActor
+    func testTOTPPhone2FAAndGazeOffStopsCameraAndBlur() throws {
+        let suiteName = "PupilTest-Recovery-\(UUID().uuidString)"
+        guard let isolatedDefaults = UserDefaults(suiteName: suiteName) else {
+            Issue.record("Failed to create isolated UserDefaults")
+            return
+        }
+        defer { isolatedDefaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = PupilSettings(defaults: isolatedDefaults)
+        let coordinator = SecurityCoordinator(settings: settings)
+
+        // 1. Verify autoPromptTouchID defaults to true and persists
+        #expect(settings.autoPromptTouchID == true)
+        settings.autoPromptTouchID = false
+        #expect(settings.autoPromptTouchID == false)
+        settings.autoPromptTouchID = true
+
+        // 2. Verify Phone 2FA TOTP secret, URI, and 6-digit verification
+        let secret = KeychainManager.ensureTOTPSecret()
+        #expect(secret.count >= 16)
+        let uri = KeychainManager.totpProvisioningURI(secretBase32: secret)
+        #expect(uri.hasPrefix("otpauth://totp/"))
+
+        let now = Date()
+        let code = try #require(KeychainManager.currentTOTPCode(at: now, secretBase32: secret))
+        #expect(code.count == 6)
+        #expect(KeychainManager.verifyTOTPCode(code, at: now, secretBase32: secret) == true)
+        #expect(KeychainManager.verifyTOTPCode("000000", at: now, secretBase32: secret) == (code == "000000"))
+
+        // 3. Verify disarming and resetting PIN via Phone 2FA TOTP code
+        try KeychainManager.enrollPin("1111")
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+
+        let resetOk = coordinator.disarmOrResetWithTOTP(code: code, newPin: "5678")
+        #expect(resetOk == true)
+        #expect(coordinator.state == .disarmed)
+        #expect(KeychainManager.verifyPin("5678") == true)
+
+        // 4. Verify turning off gazeDetectionEnabled dismisses gaze warning, stops camera, and prevents gaze blur
+        coordinator.startArming(immediate: true)
+        #expect(coordinator.state == .armed)
+        coordinator.simulateGazeWarning()
+        #expect(coordinator.isGazeWarningActive == true)
+
+        settings.gazeDetectionEnabled = false
+        NotificationCenter.default.post(name: .screenShieldSync, object: nil)
+        #expect(coordinator.isGazeWarningActive == false)
+        #expect(coordinator.cameraManager.isRunning == false)
+
+        // While gazeDetectionEnabled is false, gaze samples must not trigger gaze warnings
+        let sample = GazeSample(
+            timestamp: 9000.0,
+            faceCount: 1,
+            faceInsideROI: true,
+            faceCentroid: CGPoint(x: 0.5, y: 0.5),
+            towardScreenScore: 0.95,
+            yawRadians: 0.0,
+            pitchRadians: 0.0,
+            irisHorizontalRatio: 0.5,
+            trackingConfidence: 0.99
+        )
+        coordinator.ingestGazeSample(sample)
+        #expect(coordinator.isGazeWarningActive == false)
+
+        _ = coordinator.disarmWithPin("5678")
+    }
+
     private static func makeSyntheticFrame(width: Int, height: Int, lumaByte: UInt8) -> CGImage? {
         var pixels = [UInt8](repeating: lumaByte, count: width * height * 4)
         let colorSpace = CGColorSpaceCreateDeviceRGB()
