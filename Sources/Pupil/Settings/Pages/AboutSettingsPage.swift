@@ -60,7 +60,7 @@ public struct AboutSettingsPage: View {
             }
             .padding(.top, 8)
 
-            SettingsCaption(text: "Pupil is a software deterrent against opportunistic theft and shoulder-surfing. Distributed under the MIT License.")
+            SettingsCaption(text: "Pupil is a software deterrent against opportunistic theft and shoulder-surfing. Settings UI and notch architecture adapted from Glance (jonnyoo/glance). Distributed under the MIT License.")
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
                 .padding(.top, 4)

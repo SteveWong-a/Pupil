@@ -45,7 +45,7 @@
 
 ## Download & Installation
 
-Just like Glance, Pupil is packaged into a single standalone drag-and-drop macOS disk image (`Pupil.dmg`):
+Just like [Glance](https://github.com/jonnyoo/glance), Pupil is packaged into a single standalone drag-and-drop macOS disk image (`Pupil.dmg`):
 
 1. **Download**: Grab the latest **`Pupil.dmg`** from GitHub Releases (or generate it locally with `./scripts/build-dmg.sh`).
 2. **Install**: Open `Pupil.dmg` and drag **Pupil.app** into your `/Applications` folder.
@@ -170,6 +170,12 @@ This project adheres strictly to the **Vibe Coding & Architectural Safety Audit 
 
 ---
 
+## Acknowledgments & Credits
+
+* **[Glance (`jonnyoo/glance`)](https://github.com/jonnyoo/glance)** by **Jonathan Zhou** — Pupil's native macOS Settings window architecture (`.sidebar` vibrancy, unified toolbar chrome, progressive header blur, floating bottom capsule tab bar with trackpad swipe navigation, and custom settings controls) and hardware notch geometry patterns are adapted from Glance under the MIT License.
+
+---
+
 ## License
 
 Pupil is licensed under the **MIT License**.
@@ -178,6 +184,7 @@ Pupil is licensed under the **MIT License**.
 MIT License
 
 Copyright (c) 2026 Steve Wong
+Portions of the macOS Settings UI, window chrome, and notch geometry are adapted from Glance (https://github.com/jonnyoo/glance), Copyright (c) 2026 Jonathan Zhou.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
