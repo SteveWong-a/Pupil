@@ -2,8 +2,8 @@
   "repository": "pupil",
   "description": "Native macOS menu bar & notch security sentinel for solo study sessions",
   "platform": "macOS 15+ (Sequoia), Swift 6, AppKit + SwiftUI",
-  "total_indexed_files": 36,
-  "total_source_lines": 7862,
+  "total_indexed_files": 37,
+  "total_source_lines": 8721,
   "symbol_directory": {
     "Package.swift": [],
     "scripts/bundle-app.sh": [],
@@ -86,6 +86,23 @@
       "authenticateDeviceOwner",
       "hashPin",
       "constantTimeEqual"
+    ],
+    "Sources/Pupil/Core/WebPushManager.swift": [
+      "WebPushSubscription",
+      "WebPushError",
+      "WebPushManager",
+      "base64URLEncodedString",
+      "ensureVAPIDIdentity",
+      "regeneratePairingChannel",
+      "generateRandomChannelID",
+      "makePairingQRCodeImage",
+      "startPairingListener",
+      "stopPairingListener",
+      "pollPairingRendezvousOnce",
+      "pastePairingFromClipboard",
+      "importPairingToken",
+      "unpairPhone",
+      "sendPushNotification"
     ],
     "Sources/Pupil/Vision/VisionGazeDetector.swift": [
       "GazeSample",
@@ -300,6 +317,7 @@
       "testSustainedSpatialLiftEscalationAndDisarmReset",
       "testWebcamOcclusionAndVisionMotionDetector",
       "testAutoTouchIDAndGazeOffStopsCameraAndBlur",
+      "testWebPushEncryptionAndOneTimePairing",
       "makeSyntheticFrame"
     ]
   },
@@ -473,8 +491,8 @@
       "chunk_id": "pupil::Sources::Pupil::Core::SecurityCoordinator.swift",
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
-      "line_count": 714,
-      "content_hash": "1eadd414411ffdaa",
+      "line_count": 744,
+      "content_hash": "ef07a7f75df3df42",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -707,6 +725,59 @@
         "plaintext",
         "storage",
         "fast"
+      ]
+    },
+    {
+      "chunk_id": "pupil::Sources::Pupil::Core::WebPushManager.swift",
+      "file_path": "Sources/Pupil/Core/WebPushManager.swift",
+      "module_category": "RFC 8291/8292 Web Push & QR Phone Pairing",
+      "line_count": 608,
+      "content_hash": "fa8f4839b70f5a85",
+      "symbols": [
+        "WebPushSubscription",
+        "WebPushError",
+        "WebPushManager",
+        "base64URLEncodedString",
+        "ensureVAPIDIdentity",
+        "regeneratePairingChannel",
+        "generateRandomChannelID",
+        "makePairingQRCodeImage",
+        "startPairingListener",
+        "stopPairingListener",
+        "pollPairingRendezvousOnce",
+        "pastePairingFromClipboard",
+        "importPairingToken",
+        "unpairPhone",
+        "sendPushNotification"
+      ],
+      "summary": "WebPushManager.swift Pupil Native macOS W3C Web Push (RFC 8030 / RFC 8291 aes128gcm / RFC 8292 VAPID) engine and one-time QR code companion pairing manager using Apple CryptoKit and CoreImage.",
+      "semantic_text": "File: Sources/Pupil/Core/WebPushManager.swift\nModule: RFC 8291/8292 Web Push & QR Phone Pairing\nSummary: WebPushManager.swift Pupil Native macOS W3C Web Push (RFC 8030 / RFC 8291 aes128gcm / RFC 8292 VAPID) engine and one-time QR code companion pairing manager using Apple CryptoKit and CoreImage.\nKey Symbols: WebPushSubscription, WebPushError, WebPushManager, base64URLEncodedString, ensureVAPIDIdentity, regeneratePairingChannel, generateRandomChannelID, makePairingQRCodeImage, startPairingListener, stopPairingListener, pollPairingRendezvousOnce, pastePairingFromClipboard, importPairingToken, unpairPhone, sendPushNotification\nContent Sample:\n//\n//  WebPushManager.swift\n//  Pupil\n//\n//  Native macOS W3C Web Push (RFC 8030 / RFC 8291 aes128gcm / RFC 8292 VAPID) engine\n//  and one-time QR code companion pairing manager using Apple CryptoKit and CoreImage.\n//\n\nimport AppKit\nimport CoreImage\nimport CryptoKit\nimport Foundation\nimport Observation\n\npublic struct WebPushSubscription: Codable, Sendable, Equatable {\n    public let endpoint: String\n    public let p256dh: String\n    public let auth: String\n    public let deviceName: String\n    public let pairedAt: Date\n\n    public init(\n        endpoint: String,\n        p256dh: String,\n        auth: String,\n        deviceName: String = \"iPhone\",\n        pairedAt: Date = Date()\n    ) {\n        self.endpoint = endpoint\n        self.p256dh = p256dh\n        self.auth = auth\n        self.deviceName = deviceName\n        self.pairedAt = pairedAt\n    }\n\n    public var endpointHost: String {\n        guard let url = URL(string: endpoint), let host = url.host else {\n            return \"Apple Web Push\"\n        }\n        return host",
+      "keywords": [
+        "sources",
+        "pupil",
+        "core",
+        "webpushmanager",
+        "swift",
+        "rfc",
+        "8291",
+        "8292",
+        "web",
+        "push",
+        "phone",
+        "pairing",
+        "webpushmanager",
+        "swift",
+        "pupil",
+        "native",
+        "macos",
+        "w3c",
+        "web",
+        "push",
+        "rfc",
+        "8030",
+        "rfc",
+        "8291",
+        "aes128gcm"
       ]
     },
     {
@@ -1244,8 +1315,8 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::PupilSettings.swift",
       "file_path": "Sources/Pupil/Settings/PupilSettings.swift",
       "module_category": "Observable Settings Store",
-      "line_count": 418,
-      "content_hash": "2a3ee72230ad4724",
+      "line_count": 448,
+      "content_hash": "e542436f76c0fc79",
       "symbols": [
         "GazeSensitivity",
         "NotchDeterrentStyle",
@@ -1680,15 +1751,15 @@
       "chunk_id": "pupil::Sources::Pupil::Settings::Pages::SensorsSettingsPage.swift",
       "file_path": "Sources/Pupil/Settings/Pages/SensorsSettingsPage.swift",
       "module_category": "Hardware Sensors & Relay Settings Page",
-      "line_count": 155,
-      "content_hash": "6cb48afd037952b9",
+      "line_count": 272,
+      "content_hash": "88e502ade2ba7f99",
       "symbols": [
         "SensorsSettingsPage",
         "toggleTrigger",
         "sensorReadoutRow"
       ],
       "summary": "SensorsSettingsPage.swift Pupil Hardware tamper triggers, sleep assertion behavior, and live sensor status.",
-      "semantic_text": "File: Sources/Pupil/Settings/Pages/SensorsSettingsPage.swift\nModule: Hardware Sensors & Relay Settings Page\nSummary: SensorsSettingsPage.swift Pupil Hardware tamper triggers, sleep assertion behavior, and live sensor status.\nKey Symbols: SensorsSettingsPage, toggleTrigger, sensorReadoutRow\nContent Sample:\n//\n//  SensorsSettingsPage.swift\n//  Pupil\n//\n//  Hardware tamper triggers, sleep assertion behavior, and live sensor status.\n//\n\nimport SwiftUI\n\npublic struct SensorsSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsLabeledOptionRow(\n                    title: \"Triggers\",\n                    subtitle: \"Choose which physical events trigger the tamper countdown while armed.\"\n                ) {\n                    ForEach(HardwareTrigger.allCases) { trigger in\n                        let isSelected = settings.hardwareTriggers.contains(trigger)\n                        let tint: Color = isSelected\n                            ? SettingsMetrics.textPrimary.opacity(0.75)\n                            : SettingsMetrics.textSecondary.opacity(0.65)\n                        SettingsOptionTile(\n                            title: trigger.title,\n                            isSelected: isSelected,\n                            action: { toggleTrigger(trigger, isSelected: isSelected) },\n                            previewHeight: SettingsMetrics.optionPreviewHeight,\n                            previewWidth: SettingsMetrics.optionTileWidth\n                        ) {\n                            Image(systemName: trigger.iconName)\n                                .font(.system(size: 16, weight: .medium))\n                                .foregroundStyle(tint)\n                        }",
+      "semantic_text": "File: Sources/Pupil/Settings/Pages/SensorsSettingsPage.swift\nModule: Hardware Sensors & Relay Settings Page\nSummary: SensorsSettingsPage.swift Pupil Hardware tamper triggers, sleep assertion behavior, and live sensor status.\nKey Symbols: SensorsSettingsPage, toggleTrigger, sensorReadoutRow\nContent Sample:\n//\n//  SensorsSettingsPage.swift\n//  Pupil\n//\n//  Hardware tamper triggers, sleep assertion behavior, and live sensor status.\n//\n\nimport AppKit\nimport SwiftUI\n\npublic struct SensorsSettingsPage: View {\n    @Bindable var coordinator: SecurityCoordinator\n    @Bindable private var settings = PupilSettings.shared\n\n    public init(coordinator: SecurityCoordinator) {\n        self.coordinator = coordinator\n    }\n\n    public var body: some View {\n        VStack(alignment: .leading, spacing: SettingsMetrics.rowSpacing) {\n            SettingsGroup {\n                SettingsLabeledOptionRow(\n                    title: \"Triggers\",\n                    subtitle: \"Choose which physical events trigger the tamper countdown while armed.\"\n                ) {\n                    ForEach(HardwareTrigger.allCases) { trigger in\n                        let isSelected = settings.hardwareTriggers.contains(trigger)\n                        let tint: Color = isSelected\n                            ? SettingsMetrics.textPrimary.opacity(0.75)\n                            : SettingsMetrics.textSecondary.opacity(0.65)\n                        SettingsOptionTile(\n                            title: trigger.title,\n                            isSelected: isSelected,\n                            action: { toggleTrigger(trigger, isSelected: isSelected) },\n                            previewHeight: SettingsMetrics.optionPreviewHeight,\n                            previewWidth: SettingsMetrics.optionTileWidth\n                        ) {\n                            Image(systemName: trigger.iconName)\n                                .font(.system(size: 16, weight: .medium))\n                                .foregroundStyle(tint)",
       "keywords": [
         "sources",
         "pupil",
@@ -1794,8 +1865,8 @@
       "chunk_id": "pupil::Tests::PupilTests::PupilSecurityTests.swift",
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
-      "line_count": 454,
-      "content_hash": "0171aa77302aab83",
+      "line_count": 528,
+      "content_hash": "35997d9fe7102046",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",
@@ -1808,10 +1879,11 @@
         "testSustainedSpatialLiftEscalationAndDisarmReset",
         "testWebcamOcclusionAndVisionMotionDetector",
         "testAutoTouchIDAndGazeOffStopsCameraAndBlur",
+        "testWebPushEncryptionAndOneTimePairing",
         "makeSyntheticFrame"
       ],
       "summary": "Module implementing PupilSecurityTests.swift",
-      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testGazeWarningReceptivenessAndPrivacyBlur, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, testAutoTouchIDAndGazeOffStopsCameraAndBlur, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)\n        let s1 = GazeSample(",
+      "semantic_text": "File: Tests/PupilTests/PupilSecurityTests.swift\nModule: Deterministic Security Test Suite\nSummary: Module implementing PupilSecurityTests.swift\nKey Symbols: PupilSecurityTests, testPinEnrollmentAndVerification, testGazeDwellAggregator, testSecurityCoordinatorLifecycle, testScreenShieldAndBlurSettings, testGazeWarningReceptivenessAndPrivacyBlur, testNotchDeterrentStyleOptions, testTableBumpMotionSpikeSuppressed, testSustainedSpatialLiftEscalationAndDisarmReset, testWebcamOcclusionAndVisionMotionDetector, testAutoTouchIDAndGazeOffStopsCameraAndBlur, testWebPushEncryptionAndOneTimePairing, makeSyntheticFrame\nContent Sample:\nimport CoreGraphics\nimport CryptoKit\nimport Foundation\nimport Testing\n@testable import Pupil\n\n@Suite(\"Pupil Core & Vision Tests\", .serialized)\nstruct PupilSecurityTests {\n    @Test(\"Keychain PIN enrollment and verification\")\n    func testPinEnrollmentAndVerification() throws {\n        try KeychainManager.enrollPin(\"4829\")\n        #expect(KeychainManager.hasEnrolledPin == true)\n        #expect(KeychainManager.verifyPin(\"4829\") == true)\n        #expect(KeychainManager.verifyPin(\"0000\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12\") == false)\n        #expect(KeychainManager.isValidPinFormat(\"12345678\") == true)\n    }\n\n    @Test(\"GazeTemporalAggregator accumulates sustained dwell and tolerates brief blinks\")\n    func testGazeDwellAggregator() {\n        var aggregator = GazeTemporalAggregator()\n        let baseTime: TimeInterval = 1000.0\n\n        // Frame at t=0.0s\n        let s0 = GazeSample(\n            timestamp: baseTime,\n            faceCount: 1,\n            faceInsideROI: true,\n            faceCentroid: CGPoint(x: 0.4, y: 0.5),\n            towardScreenScore: 0.85,\n            yawRadians: 0.05,\n            pitchRadians: 0.02,\n            irisHorizontalRatio: 0.5,\n            trackingConfidence: 0.92\n        )\n        let snap0 = aggregator.ingest(s0, scoreThreshold: 0.65, dwellThresholdSeconds: 2.0)\n        #expect(snap0.isGazeWarningActive == false)\n        #expect(snap0.dwellProgress == 0.0)\n\n        // Brief blink at t=1.0s (<= 0.35s gap after qualifying sample at t=0.9s)",
       "keywords": [
         "tests",
         "pupiltests",
@@ -1836,6 +1908,7 @@
         "testsustainedspatialliftescalationanddisarmreset",
         "testwebcamocclusionandvisionmotiondetector",
         "testautotouchidandgazeoffstopscameraandblur",
+        "testwebpushencryptionandonetimepairing",
         "makesyntheticframe"
       ]
     }

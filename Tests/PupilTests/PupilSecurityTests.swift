@@ -1,4 +1,5 @@
 import CoreGraphics
+import CryptoKit
 import Foundation
 import Testing
 @testable import Pupil
@@ -433,6 +434,79 @@ struct PupilSecurityTests {
         #expect(coordinator.isGazeWarningActive == false)
 
         _ = coordinator.disarmWithPin("5678")
+    }
+
+    @Test("Web Push RFC 8291 aes128gcm encryption, VAPID ES256 signing, and one-time QR pairing")
+    @MainActor
+    func testWebPushEncryptionAndOneTimePairing() throws {
+        let suiteName = "PupilTest-WebPush-\(UUID().uuidString)"
+        guard let isolatedDefaults = UserDefaults(suiteName: suiteName) else {
+            Issue.record("Failed to create isolated UserDefaults")
+            return
+        }
+        defer { isolatedDefaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = PupilSettings(defaults: isolatedDefaults)
+        let manager = WebPushManager(settings: settings)
+
+        // 1. Verify 65-byte uncompressed P-256 VAPID public key and QR image generation
+        let pubKeyData = try #require(Data(base64URLEncoded: manager.vapidPublicKeyBase64URL))
+        #expect(pubKeyData.count == 65)
+        #expect(pubKeyData[0] == 0x04)
+        #expect(manager.pairingURLString.contains("https://stevewong-a.github.io/pupil/?"))
+        #expect(manager.makePairingQRCodeImage(dimension: 120) != nil)
+
+        // 2. Verify VAPID ES256 JWT generation for Apple Web Push origin
+        let appleEndpoint = try #require(URL(string: "https://web.push.apple.com/QGp9testEndpoint"))
+        let vapidHeader = try WebPushManager.makeVAPIDAuthorizationHeader(
+            for: appleEndpoint,
+            privateKey: manager.vapidPrivateKey
+        )
+        #expect(vapidHeader.hasPrefix("vapid t="))
+        #expect(vapidHeader.contains(", k=\(manager.vapidPublicKeyBase64URL)"))
+
+        // 3. Verify RFC 8291 + RFC 8188 aes128gcm round-trip payload encryption & decryption
+        let receiverKey = P256.KeyAgreement.PrivateKey()
+        let receiverP256dh = receiverKey.publicKey.x963Representation.base64URLEncodedString()
+        let authSecret = Data((0 ..< 16).map { UInt8($0 + 1) })
+        let authB64 = authSecret.base64URLEncodedString()
+
+        let samplePlaintext = Data(#"{"title":"🚨 Pupil Alarm","body":"Charger unplugged!"}"#.utf8)
+        let encrypted = try WebPushManager.encryptWebPushPayload(
+            samplePlaintext,
+            p256dhBase64URL: receiverP256dh,
+            authBase64URL: authB64
+        )
+        #expect(encrypted.count == 86 + samplePlaintext.count + 1 + 16)
+
+        let decrypted = try WebPushManager.decryptWebPushPayload(
+            encrypted,
+            receiverPrivateKey: receiverKey,
+            authSecret: authSecret
+        )
+        #expect(decrypted == samplePlaintext)
+
+        // 4. Verify one-time pairing token import and persistence
+        let pairingJSON: [String: Any] = [
+            "type": "pupil-webpush-pair",
+            "deviceName": "Steve's iPhone",
+            "endpoint": "https://web.push.apple.com/QGp9testEndpoint",
+            "p256dh": receiverP256dh,
+            "auth": authB64
+        ]
+        let pairingData = try JSONSerialization.data(withJSONObject: pairingJSON)
+        let token = "pupilpair://\(pairingData.base64URLEncodedString())"
+
+        #expect(manager.isPaired == false)
+        let imported = manager.importPairingToken(token)
+        #expect(imported == true)
+        #expect(manager.isPaired == true)
+        #expect(manager.activeSubscription?.deviceName == "Steve's iPhone")
+        #expect(manager.activeSubscription?.endpointHost == "web.push.apple.com")
+        #expect(settings.relayEnabled == true)
+
+        manager.unpairPhone()
+        #expect(manager.isPaired == false)
     }
 
     private static func makeSyntheticFrame(width: Int, height: Int, lumaByte: UInt8) -> CGImage? {

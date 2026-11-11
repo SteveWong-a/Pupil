@@ -40,6 +40,9 @@
   * **Table-Bump Rejection & Lens Occlusion Protection**: Suppresses transient $< 0.5\text{s}$ desk bumps while escalating continuous displacement or lens occlusion (mean luminance and variance near zero) lasting $> 1.2\text{s}$ to the tamper countdown.
   * **100% On-Device Privacy**: All frame processing remains strictly transient in memory—zero frames, crops, or landmarks are ever saved to disk or transmitted over the network.
 * **Keychain & Touch ID Security**: Disarm PINs are salted and SHA-256 hashed in the macOS Keychain (`Security` framework) alongside `LocalAuthentication` Touch ID verification.
+* **One-Time QR Phone Companion (Direct W3C Web Push / APNs)**:
+  * **Zero-Config Lock-Screen Alerts**: Scan an in-app `CoreImage` QR code once in **Settings $\rightarrow$ Sensors $\rightarrow$ Phone Companion**, add the companion web app (`https://stevewong-a.github.io/pupil/`) to your iPhone Home Screen, and tap **Pair & Enable Lock-Screen Alerts**.
+  * **End-to-End Encrypted Direct Delivery**: `WebPushManager` signs RFC 8292 VAPID ES256 tokens and encrypts alert payloads using native `CryptoKit` (`P256.KeyAgreement` + `HKDF-SHA256` + `AES-128-GCM` per RFC 8291 / RFC 8188), pushing directly from your Mac to `https://web.push.apple.com` to wake your locked iPhone across any Wi-Fi or 5G network with zero recurring setup.
 
 ---
 
@@ -96,7 +99,8 @@ pupil/
 │   │   ├── PowerAndLidMonitor.swift    # IOKit AC charger, AppleClamshellState & IOPMAssertion
 │   │   ├── LockMonitor.swift           # DistributedNotificationCenter lock/sleep/wake monitor
 │   │   ├── SirenSynthesizer.swift      # Zero-asset AVAudioEngine dual-tone alarm synthesizer
-│   │   └── KeychainManager.swift       # Salted SHA-256 Keychain PIN & Touch ID authentication
+│   │   ├── KeychainManager.swift       # Salted SHA-256 Keychain PIN & Touch ID authentication
+│   │   └── WebPushManager.swift        # CryptoKit RFC 8291/8292 Web Push & one-time QR phone pairing
 │   ├── Vision/
 │   │   ├── CameraManager.swift         # AVFoundation 10 FPS capture session
 │   │   ├── VisionGazeDetector.swift    # Apple Vision landmarks & GazeTemporalAggregator

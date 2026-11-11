@@ -106,6 +106,7 @@ public final class SecurityCoordinator {
     public let powerMonitor: PowerAndLidMonitor
     public let lockMonitor: LockMonitor
     public let cameraManager: CameraManager
+    public let webPushManager: WebPushManager
 
     public var onStateChanged: ((SecurityState) -> Void)?
     public var onNotchUpdateNeeded: (() -> Void)?
@@ -119,12 +120,14 @@ public final class SecurityCoordinator {
         settings: PupilSettings = .shared,
         powerMonitor: PowerAndLidMonitor = PowerAndLidMonitor(),
         lockMonitor: LockMonitor = LockMonitor(),
-        cameraManager: CameraManager = CameraManager()
+        cameraManager: CameraManager = CameraManager(),
+        webPushManager: WebPushManager? = nil
     ) {
         self.settings = settings
         self.powerMonitor = powerMonitor
         self.lockMonitor = lockMonitor
         self.cameraManager = cameraManager
+        self.webPushManager = webPushManager ?? WebPushManager(settings: settings)
 
         // Ensure a default PIN ("1234") is enrolled on first launch if none exists so the user can test immediately,
         // and clearly surface PIN changes in Settings.
@@ -409,6 +412,14 @@ public final class SecurityCoordinator {
         onNotchUpdateNeeded?()
         NotificationCenter.default.post(name: .screenShieldSync, object: nil)
         NotificationCenter.default.post(name: .screenShieldOpenPrompt, object: nil)
+        Task { [weak self] in
+            _ = await self?.webPushManager.sendPushNotification(
+                title: "🔒 Pupil Screen Locked",
+                body: "Keyboard or trackpad activity detected while your MacBook is armed.",
+                severity: "high",
+                tag: "pupil-input-lock"
+            )
+        }
     }
 
     // MARK: - Tamper & Alarm Escalation
@@ -442,6 +453,16 @@ public final class SecurityCoordinator {
         onStateChanged?(state)
         onNotchUpdateNeeded?()
 
+        let grace = settings.gracePeriodSeconds
+        Task { [weak self] in
+            _ = await self?.webPushManager.sendPushNotification(
+                title: "⚠️ Pupil Tamper Countdown (\(grace)s)",
+                body: "\(source.rawValue) detected on your MacBook. Siren sounds in \(grace)s unless disarmed.",
+                severity: "high",
+                tag: "pupil-tamper"
+            )
+        }
+
         startCountdownTimer(seconds: settings.gracePeriodSeconds) { [weak self] in
             guard let self else { return }
             self.enterAlarm(source: source, simulated: simulated)
@@ -465,6 +486,15 @@ public final class SecurityCoordinator {
         )
         onStateChanged?(state)
         onNotchUpdateNeeded?()
+
+        Task { [weak self] in
+            _ = await self?.webPushManager.sendPushNotification(
+                title: "🚨 PUPIL SIREN ALARM ACTIVE",
+                body: "\(source.rawValue) — Audible siren and sleep lock engaged on your MacBook!",
+                severity: "critical",
+                tag: "pupil-alarm"
+            )
+        }
     }
 
     // MARK: - Gaze Processing & Simulation

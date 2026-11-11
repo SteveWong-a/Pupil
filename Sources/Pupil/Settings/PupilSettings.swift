@@ -272,6 +272,25 @@ public final class PupilSettings {
         didSet { defaults.set(relayURL, forKey: Keys.relayURL) }
     }
 
+    public var vapidPrivateKeyRaw: String {
+        didSet { defaults.set(vapidPrivateKeyRaw, forKey: Keys.vapidPrivateKeyRaw) }
+    }
+
+    public var pairingChannelID: String {
+        didSet { defaults.set(pairingChannelID, forKey: Keys.pairingChannelID) }
+    }
+
+    public var pairedPhoneSubscription: WebPushSubscription? {
+        didSet {
+            if let pairedPhoneSubscription,
+               let encoded = try? JSONEncoder().encode(pairedPhoneSubscription) {
+                defaults.set(encoded, forKey: Keys.pairedPhoneSubscription)
+            } else {
+                defaults.removeObject(forKey: Keys.pairedPhoneSubscription)
+            }
+        }
+    }
+
     public var cameraRoi: CameraROI {
         didSet {
             if let encoded = try? JSONEncoder().encode(cameraRoi) {
@@ -377,6 +396,14 @@ public final class PupilSettings {
         self.preferredDisplayID = defaults.string(forKey: Keys.preferredDisplayID)
         self.relayEnabled = defaults.object(forKey: Keys.relayEnabled) as? Bool ?? false
         self.relayURL = defaults.string(forKey: Keys.relayURL) ?? "ws://127.0.0.1:8787"
+        self.vapidPrivateKeyRaw = defaults.string(forKey: Keys.vapidPrivateKeyRaw) ?? ""
+        self.pairingChannelID = defaults.string(forKey: Keys.pairingChannelID) ?? ""
+        if let subData = defaults.data(forKey: Keys.pairedPhoneSubscription),
+           let sub = try? JSONDecoder().decode(WebPushSubscription.self, from: subData) {
+            self.pairedPhoneSubscription = sub
+        } else {
+            self.pairedPhoneSubscription = nil
+        }
         if let roiData = defaults.data(forKey: Keys.cameraRoi),
            let decoded = try? JSONDecoder().decode(CameraROI.self, from: roiData) {
             self.cameraRoi = decoded
@@ -413,6 +440,9 @@ public final class PupilSettings {
         static let preferredDisplayID = "pupil.preferredDisplayID"
         static let relayEnabled = "pupil.relayEnabled"
         static let relayURL = "pupil.relayURL"
+        static let vapidPrivateKeyRaw = "pupil.vapidPrivateKeyRaw"
+        static let pairingChannelID = "pupil.pairingChannelID"
+        static let pairedPhoneSubscription = "pupil.pairedPhoneSubscription"
         static let cameraRoi = "pupil.cameraRoi"
     }
 }

@@ -216,7 +216,24 @@ Generate alternating two-tone audio (880 Hz / 660 Hz) directly through an `AVAud
 
 ---
 
-## 10. Packaging & Verification Checklist
+## 10. One-Time Phone Companion & Direct W3C Web Push (RFC 8291 + VAPID)
+
+Local WebSockets (`ws://127.0.0.1:8787`) fail in production because iOS and Android suspend background browser tabs within ~30 seconds of locking the phone screen, and public library/cafe Wi-Fi networks enforce AP Client Isolation.
+
+Instead, Pupil implements **native end-to-end encrypted W3C Web Push (`RFC 8030` + `RFC 8291` + `RFC 8292`)** directly from macOS `CryptoKit` to Apple's `https://web.push.apple.com` APNs servers:
+
+1. **In-App CoreImage QR Code**: `WebPushManager` generates a persistent P-256 VAPID signing identity (`P256.Signing.PrivateKey`) and renders a razor-sharp QR code (`CIQRCodeGenerator`) inside `SensorsSettingsPage`.
+2. **Single-Scan Home Screen PWA (`docs/index.html`, `docs/manifest.json`, `docs/sw.js`)**:
+   - Hosted statically on GitHub Pages (`https://stevewong-a.github.io/pupil/`).
+   - Omitting `start_url` in `manifest.json` and caching the `?v=<vapidPubKey>&c=<channel>` parameters in `CacheStorage` ensures the user only scans the QR code **once** in Safari before tapping **Add to Home Screen**.
+3. **Automatic One-Time Handshake + Universal Clipboard Fallback**:
+   - Tapping **Pair & Enable Lock-Screen Alerts** in the Home Screen app subscribes via `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` and automatically transmits the `pupilpair://` token back to the Mac (with 1-tap Apple Universal Clipboard fallback).
+4. **Zero-Server Direct APNs Delivery**:
+   - On Armed Input Lock, Tamper Countdown, or Siren Alarm, `WebPushManager` signs an `ES256` VAPID JWT and encrypts the alert payload with ephemeral P-256 ECDH + `HKDF<SHA256>` + `AES-128-GCM` (`aes128gcm`), sending an HTTPS `POST` directly from the Mac to `web.push.apple.com` to wake the locked iPhone across any Wi-Fi or 5G network.
+
+---
+
+## 11. Packaging & Verification Checklist
 
 Before releasing any native macOS utility:
 - [x] Compile cleanly under modern Swift (`swift build`) with zero warnings.

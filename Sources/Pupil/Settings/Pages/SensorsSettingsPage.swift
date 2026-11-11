@@ -5,6 +5,7 @@
 //  Hardware tamper triggers, sleep assertion behavior, and live sensor status.
 //
 
+import AppKit
 import SwiftUI
 
 public struct SensorsSettingsPage: View {
@@ -110,24 +111,140 @@ public struct SensorsSettingsPage: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "Remote Relay")
+                SettingsSectionTitle(text: "Phone Companion")
                 SettingsGroup {
                     SettingsRowContent(
-                        title: "WebSocket notifications",
-                        info: "Forwards tamper countdowns and alarm events to a local or remote WebSocket endpoint."
+                        title: "Lock-screen phone alerts",
+                        subtitle: "Pushes encrypted alerts straight to your locked iPhone via Apple Web Push (APNs) on tamper or siren events.",
+                        info: "One-time QR pairing using W3C Web Push (RFC 8291 + VAPID). Works across Wi-Fi and cellular with zero re-pairing."
                     ) {
                         PupilToggle(isOn: $settings.relayEnabled)
                     }
+
                     SettingsGroupDivider()
-                    SettingsRowContent(title: "Endpoint") {
-                        TextField("ws://127.0.0.1:8787", text: $settings.relayURL)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12))
-                            .frame(width: 200)
-                            .disabled(!settings.relayEnabled)
+
+                    if let sub = coordinator.webPushManager.activeSubscription {
+                        SettingsRowContent(
+                            title: "Paired device",
+                            subtitle: "\(sub.deviceName) • \(sub.endpointHost)"
+                        ) {
+                            HStack(spacing: 8) {
+                                HStack(spacing: 5) {
+                                    Circle()
+                                        .fill(PupilTheme.armedGreen)
+                                        .frame(width: 7, height: 7)
+                                    Text("Paired")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(PupilTheme.armedGreen)
+                                }
+
+                                Button("Send Test Alert") {
+                                    Task {
+                                        if !settings.relayEnabled {
+                                            settings.relayEnabled = true
+                                        }
+                                        _ = await coordinator.webPushManager.sendPushNotification(
+                                            title: "🚨 Pupil Test Alert",
+                                            body: "Your locked phone is receiving direct security alerts from your MacBook.",
+                                            severity: "high",
+                                            tag: "pupil-test"
+                                        )
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                                .disabled(coordinator.webPushManager.isSendingPush)
+
+                                Button("Unpair") {
+                                    coordinator.webPushManager.unpairPhone()
+                                    coordinator.webPushManager.startPairingListener()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                        }
+                    } else {
+                        HStack(alignment: .center, spacing: 16) {
+                            if let qrImage = coordinator.webPushManager.makePairingQRCodeImage(dimension: 120) {
+                                Image(nsImage: qrImage)
+                                    .interpolation(.none)
+                                    .resizable()
+                                    .frame(width: 120, height: 120)
+                                    .padding(8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(Color.white)
+                                    )
+                            }
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 6) {
+                                    Text("One-Time iPhone Pairing")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(SettingsMetrics.textPrimary)
+                                    if coordinator.webPushManager.isListeningForPairing {
+                                        ProgressView()
+                                            .controlSize(.mini)
+                                    }
+                                }
+
+                                Text("1. Scan QR code once with your iPhone Camera.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SettingsMetrics.textSecondary)
+                                Text("2. Tap Share → Add to Home Screen, then open Pupil.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SettingsMetrics.textSecondary)
+                                Text("3. Tap 'Pair & Enable Lock-Screen Alerts' — pairs automatically.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SettingsMetrics.textSecondary)
+
+                                HStack(spacing: 8) {
+                                    Button("Paste Pairing Code") {
+                                        coordinator.webPushManager.pastePairingFromClipboard()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .help("Fallback if automatic pairing is blocked by network firewall (uses Apple Universal Clipboard).")
+
+                                    Button("Copy Link") {
+                                        NSPasteboard.general.clearContents()
+                                        NSPasteboard.general.setString(coordinator.webPushManager.pairingURLString, forType: .string)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                }
+                                .padding(.top, 4)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
+                        .padding(.vertical, 12)
+                    }
+
+                    if let status = coordinator.webPushManager.statusMessage, !status.isEmpty {
+                        SettingsGroupDivider()
+                        HStack(spacing: 6) {
+                            Image(systemName: coordinator.webPushManager.lastPushSucceeded ? "checkmark.circle.fill" : "info.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(coordinator.webPushManager.lastPushSucceeded ? PupilTheme.armedGreen : PupilTheme.warningAmber)
+                            Text(status)
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(SettingsMetrics.textSecondary)
+                            Spacer()
+                        }
+                        .padding(.horizontal, SettingsMetrics.rowHorizontalInset)
+                        .padding(.vertical, 8)
                     }
                 }
             }
+        }
+        .onAppear {
+            if !coordinator.webPushManager.isPaired {
+                coordinator.webPushManager.startPairingListener()
+            }
+        }
+        .onDisappear {
+            coordinator.webPushManager.stopPairingListener()
         }
     }
 

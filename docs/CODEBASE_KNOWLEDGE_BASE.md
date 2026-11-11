@@ -149,6 +149,13 @@ flowchart LR
 * **Floating Capsule Tab Bar**: Bottom-pinned pill with dynamic sliding indicator and unfurling label animation.
 * **Trackpad Gestures**: `NSEvent.addLocalMonitorForEvents(matching: .scrollWheel)` for horizontal two-finger tab swiping.
 
+### 4.10. One-Time Phone Companion & Direct W3C Web Push (`WebPushManager.swift`, `docs/index.html`, `docs/sw.js`)
+* **Replaces Legacy Local WebSocket (`ws://127.0.0.1:8787`)**: Local WebSockets drop within ~30 seconds when a phone screen locks and are blocked by public library/cafe Wi-Fi client isolation.
+* **One-Time QR Code Pairing**: `WebPushManager` generates a persistent P-256 VAPID identity (`CryptoKit.P256.Signing.PrivateKey`) and renders an in-app QR code (`CIFilter(name: "CIQRCodeGenerator")`) in `SensorsSettingsPage.swift` pointing to `https://stevewong-a.github.io/pupil/?v=<vapidPubKey>&c=<channel>`.
+* **iOS 16.4+ Standalone Home Screen PWA**: Hosted statically in `docs/` (`index.html`, `manifest.json`, `sw.js`). Omitting `start_url` in `manifest.json` and caching pairing parameters in `CacheStorage` ensures the single QR scan persists across Safari's "Add to Home Screen" transition without rescanning.
+* **Automatic Rendezvous + Universal Clipboard Fallback**: Tapping **Pair & Enable Lock-Screen Alerts** on the iPhone subscribes to Apple's `https://web.push.apple.com` push service and beams the `pupilpair://` subscription token back to the Mac automatically (with a 1-tap Apple Universal Clipboard fallback).
+* **Direct Mac $\rightarrow$ Apple APNs Delivery (RFC 8291 & RFC 8292)**: On Armed Input Lock, Tamper Countdown, or Siren Alarm, `WebPushManager` signs an `ES256` VAPID JWT (`RFC 8292`) and encrypts the JSON alert using `P256.KeyAgreement` ECDH + `HKDF<SHA256>` + `AES.GCM` (`aes128gcm`, `RFC 8291` / `RFC 8188`), sending an HTTPS `POST` directly from the Mac to `web.push.apple.com` to wake the locked phone screen over any Wi-Fi or cellular network.
+
 ---
 
 ## 5. File & Symbol Cross-Reference Index
@@ -161,6 +168,7 @@ flowchart LR
 | `Sources/Pupil/Core/LockMonitor.swift` | Screen Lock & Sleep Monitor | `LockMonitor`, `LockEventKind` |
 | `Sources/Pupil/Core/SirenSynthesizer.swift` | Real-time Two-Tone Alarm Synthesizer | `SirenSynthesizer` |
 | `Sources/Pupil/Core/KeychainManager.swift` | Salted SHA-256 PIN & Touch ID Store | `KeychainManager`, `KeychainError` |
+| `Sources/Pupil/Core/WebPushManager.swift` | Native CryptoKit RFC 8291/8292 Web Push & QR Pairing | `WebPushManager`, `WebPushSubscription`, `WebPushError` |
 | `Sources/Pupil/Vision/VisionGazeDetector.swift` | Apple Vision Landmark & Dwell Detector | `VisionGazeDetector`, `GazeSample`, `GazeDwellSnapshot`, `GazeTemporalAggregator` |
 | `Sources/Pupil/Vision/VisionMotionDetector.swift` | Apple Vision Spatial Lift & Motion Detector | `VisionMotionDetector`, `MotionSample`, `MotionEscalationSnapshot`, `MotionTemporalAggregator` |
 | `Sources/Pupil/Vision/CameraManager.swift` | AVFoundation 10 FPS Frame Ingestion | `CameraManager`, `CameraDeviceInfo` |
