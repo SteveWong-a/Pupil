@@ -414,7 +414,7 @@ public final class SecurityCoordinator {
         NotificationCenter.default.post(name: .screenShieldOpenPrompt, object: nil)
         Task { [weak self] in
             _ = await self?.webPushManager.sendPushNotification(
-                title: "🔒 Pupil Screen Locked",
+                title: "Pupil Screen Locked",
                 body: "Keyboard or trackpad activity detected while your MacBook is armed.",
                 severity: "high",
                 tag: "pupil-input-lock"
@@ -456,7 +456,7 @@ public final class SecurityCoordinator {
         let grace = settings.gracePeriodSeconds
         Task { [weak self] in
             _ = await self?.webPushManager.sendPushNotification(
-                title: "⚠️ Pupil Tamper Countdown (\(grace)s)",
+                title: "Pupil Tamper Countdown (\(grace)s)",
                 body: "\(source.rawValue) detected on your MacBook. Siren sounds in \(grace)s unless disarmed.",
                 severity: "high",
                 tag: "pupil-tamper"
@@ -489,7 +489,7 @@ public final class SecurityCoordinator {
 
         Task { [weak self] in
             _ = await self?.webPushManager.sendPushNotification(
-                title: "🚨 PUPIL SIREN ALARM ACTIVE",
+                title: "Pupil Siren Alarm Active",
                 body: "\(source.rawValue) — Audible siren and sleep lock engaged on your MacBook!",
                 severity: "critical",
                 tag: "pupil-alarm"

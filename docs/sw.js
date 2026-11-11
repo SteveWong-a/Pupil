@@ -10,7 +10,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: '🚨 Pupil Security Alert',
+    title: 'Pupil Security Alert',
     body: 'Tamper or alarm activity detected on your MacBook.',
     severity: 'high',
     tag: 'pupil-security-alert',

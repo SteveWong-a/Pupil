@@ -7,79 +7,72 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Pupil">
-  <meta name="theme-color" content="#0e1015">
-  <title>Phone Companion | Pupil Security</title>
+  <meta name="theme-color" content="#0b0d13">
+  <title>Pupil Sentinel Companion</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
   <style>
     :root {
-      --bg-light: #f4f6fa;
-      --bg-dark: #0b0d12;
-      --card-light: #ffffff;
-      --card-dark: #141821;
-      --card-border-light: rgba(15, 23, 42, 0.10);
-      --card-border-dark: rgba(255, 255, 255, 0.10);
+      --bg-light: #f2f4f8;
+      --bg-dark: #000000;
+      --card-bg-light: rgba(255, 255, 255, 0.85);
+      --card-bg-dark: rgba(26, 31, 42, 0.65);
+      --card-border-light: rgba(0, 0, 0, 0.08);
+      --card-border-dark: rgba(255, 255, 255, 0.12);
+      --row-bg-light: rgba(0, 0, 0, 0.03);
+      --row-bg-dark: rgba(255, 255, 255, 0.05);
+      --row-border-light: rgba(0, 0, 0, 0.06);
+      --row-border-dark: rgba(255, 255, 255, 0.08);
       --text-primary-light: #0f172a;
-      --text-primary-dark: #f8fafc;
+      --text-primary-dark: #eeeeee;
       --text-secondary-light: #475569;
-      --text-secondary-dark: #94a3b8;
-      --brand-accent-light: #0058d6;
-      --brand-accent-dark: #38bdf8;
-      --brand-btn-bg-light: #0058d6;
-      --brand-btn-bg-dark: #0284c7;
-      --brand-btn-text-light: #ffffff;
-      --brand-btn-text-dark: #ffffff;
-      --ok-bg-light: rgba(22, 163, 74, 0.12);
-      --ok-bg-dark: rgba(34, 197, 94, 0.16);
-      --ok-text-light: #15803d;
-      --ok-text-dark: #4ade80;
-      --warn-bg-light: rgba(217, 119, 6, 0.12);
-      --warn-bg-dark: rgba(245, 158, 11, 0.16);
-      --warn-text-light: #b45309;
-      --warn-text-dark: #fbbf24;
+      --text-secondary-dark: #bfbfbf;
+      --text-tertiary-light: #94a3b8;
+      --text-tertiary-dark: #808080;
+      --accent-light: #0066cc;
+      --accent-dark: #0A84FF;
+      --btn-text-light: #ffffff;
+      --btn-text-dark: #ffffff;
+      --armed-green: #30D158;
+      --warning-amber: #FF9F0A;
+      --alarm-red: #FF453A;
 
       --bg: var(--bg-light);
-      --card: var(--card-light);
+      --card-bg: var(--card-bg-light);
       --card-border: var(--card-border-light);
+      --row-bg: var(--row-bg-light);
+      --row-border: var(--row-border-light);
       --text-primary: var(--text-primary-light);
       --text-secondary: var(--text-secondary-light);
-      --accent: var(--brand-accent-light);
-      --btn-bg: var(--brand-btn-bg-light);
-      --btn-text: var(--brand-btn-text-light);
-      --ok-bg: var(--ok-bg-light);
-      --ok-text: var(--ok-text-light);
-      --warn-bg: var(--warn-bg-light);
-      --warn-text: var(--warn-text-light);
+      --text-tertiary: var(--text-tertiary-light);
+      --accent: var(--accent-light);
+      --btn-text: var(--btn-text-light);
 
       @media (prefers-color-scheme: dark) {
         --bg: var(--bg-dark);
-        --card: var(--card-dark);
+        --card-bg: var(--card-bg-dark);
         --card-border: var(--card-border-dark);
+        --row-bg: var(--row-bg-dark);
+        --row-border: var(--row-border-dark);
         --text-primary: var(--text-primary-dark);
         --text-secondary: var(--text-secondary-dark);
-        --accent: var(--brand-accent-dark);
-        --btn-bg: var(--brand-btn-bg-dark);
-        --btn-text: var(--brand-btn-text-dark);
-        --ok-bg: var(--ok-bg-dark);
-        --ok-text: var(--ok-text-dark);
-        --warn-bg: var(--warn-bg-dark);
-        --warn-text: var(--warn-text-dark);
+        --text-tertiary: var(--text-tertiary-dark);
+        --accent: var(--accent-dark);
+        --btn-text: var(--btn-text-dark);
       }
 
       @supports (color: light-dark(white, black)) {
         --bg: light-dark(var(--bg-light), var(--bg-dark));
-        --card: light-dark(var(--card-light), var(--card-dark));
+        --card-bg: light-dark(var(--card-bg-light), var(--card-bg-dark));
         --card-border: light-dark(var(--card-border-light), var(--card-border-dark));
+        --row-bg: light-dark(var(--row-bg-light), var(--row-bg-dark));
+        --row-border: light-dark(var(--row-border-light), var(--row-border-dark));
         --text-primary: light-dark(var(--text-primary-light), var(--text-primary-dark));
         --text-secondary: light-dark(var(--text-secondary-light), var(--text-secondary-dark));
-        --accent: light-dark(var(--brand-accent-light), var(--brand-accent-dark));
-        --btn-bg: light-dark(var(--brand-btn-bg-light), var(--brand-btn-bg-dark));
-        --btn-text: light-dark(var(--brand-btn-text-light), var(--brand-btn-text-dark));
-        --ok-bg: light-dark(var(--ok-bg-light), var(--ok-bg-dark));
-        --ok-text: light-dark(var(--ok-text-light), var(--ok-text-dark));
-        --warn-bg: light-dark(var(--warn-bg-light), var(--warn-bg-dark));
-        --warn-text: light-dark(var(--warn-text-light), var(--warn-text-dark));
+        --text-tertiary: light-dark(var(--text-tertiary-light), var(--text-tertiary-dark));
+        --accent: light-dark(var(--accent-light), var(--accent-dark));
+        --btn-text: light-dark(var(--btn-text-light), var(--btn-text-dark));
       }
 
       color-scheme: light dark;
@@ -88,10 +81,11 @@
 
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      margin: 0;
       min-height: 100dvh;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
       background-color: var(--bg);
@@ -99,8 +93,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: env(safe-area-inset-top, 20px) 18px env(safe-area-inset-bottom, 24px);
+      padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 28px);
       -webkit-font-smoothing: antialiased;
     }
 
@@ -110,120 +103,205 @@
     }
 
     header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
-      margin-bottom: 18px;
+      margin-bottom: 22px;
+      padding-top: 8px;
+    }
+
+    .app-icon-wrap {
+      width: 76px;
+      height: 76px;
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      margin-bottom: 12px;
+      background-color: #0b0d13;
     }
 
     .app-icon {
-      width: 76px;
-      height: 76px;
-      border-radius: 18px;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-      margin-bottom: 12px;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
-      margin: 0 0 6px;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+      margin-bottom: 4px;
     }
 
     .subtitle {
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       color: var(--text-secondary);
-      margin: 0;
-      line-height: 1.4;
+      line-height: 1.35;
+      margin-bottom: 12px;
     }
 
-    .card {
-      background-color: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    /* macOS HeaderStatusButton Pill */
+    .header-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.80rem;
+      font-weight: 500;
+      background-color: var(--row-bg);
+      border: 1px solid var(--row-border);
+      color: var(--text-primary);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
-    h2 {
-      font-size: 1.02rem;
+    .header-status-pill.ready {
+      border-color: rgba(48, 209, 88, 0.35);
+      background-color: rgba(48, 209, 88, 0.12);
+      color: var(--armed-green);
+    }
+
+    .header-status-pill.pending {
+      border-color: var(--row-border);
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--text-tertiary);
+    }
+
+    .header-status-pill.ready .status-dot {
+      background-color: var(--armed-green);
+      box-shadow: 0 0 8px rgba(48, 209, 88, 0.6);
+    }
+
+    /* macOS Section Titles (SettingsSectionTitle) */
+    .section-title {
+      font-size: 0.72rem;
       font-weight: 600;
-      margin: 0 0 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin: 18px 0 6px 6px;
+    }
+
+    /* macOS Group Container (SettingsGroup) */
+    .settings-group {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      margin-bottom: 8px;
+    }
+
+    .group-row {
+      padding: 14px 16px;
       display: flex;
       align-items: center;
+      gap: 14px;
+    }
+
+    .group-row + .group-row {
+      border-top: 1px solid var(--row-border);
+    }
+
+    .group-card-body {
+      padding: 16px;
+    }
+
+    .row-icon-wrap {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background-color: var(--row-bg);
+      border: 1px solid var(--row-border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .row-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .row-title {
+      font-size: 0.90rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .row-desc {
+      font-size: 0.80rem;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    /* Buttons */
+    .btn-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-row {
+      display: flex;
       gap: 8px;
     }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 999px;
-      margin-bottom: 14px;
-    }
-
-    .status-pill.ready {
-      background-color: var(--ok-bg);
-      color: var(--ok-text);
-    }
-
-    .status-pill.pending {
-      background-color: var(--warn-bg);
-      color: var(--warn-text);
-    }
-
-    ol.steps {
-      margin: 0 0 14px;
-      padding-left: 20px;
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      line-height: 1.55;
-    }
-
-    ol.steps li {
-      margin-bottom: 6px;
-    }
-
-    ol.steps strong {
-      color: var(--text-primary);
-    }
-
     button {
-      width: 100%;
-      min-block-size: 48px;
-      padding: 12px 18px;
-      border-radius: 14px;
-      border: none;
-      font-size: 0.98rem;
-      font-weight: 600;
       font-family: inherit;
+      border-radius: 11px;
       cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      min-block-size: 48px;
+      min-inline-size: 48px;
+      padding: 0 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: transform 0.12s ease, opacity 0.15s ease;
+      transition: all 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+      width: 100%;
     }
 
     button:active {
       transform: scale(0.985);
+      filter: brightness(0.92);
     }
 
     button.primary {
-      background-color: var(--btn-bg);
+      background-color: var(--accent);
       color: var(--btn-text);
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32);
+      border: none;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
     }
 
     button.secondary {
-      background-color: transparent;
+      background-color: var(--row-bg);
       color: var(--text-primary);
-      border: 1px solid var(--card-border);
-      margin-top: 10px;
-      font-size: 0.9rem;
+      border: 1px solid var(--row-border);
     }
 
     :where(a:any-link, button):focus-visible {
@@ -231,39 +309,122 @@
       outline-offset: 3px;
     }
 
-    .status-box {
-      margin-top: 12px;
-      font-size: 0.86rem;
-      line-height: 1.45;
+    /* Live Status Banner */
+    .status-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      background-color: var(--row-bg);
+      border: 1px solid var(--row-border);
       color: var(--text-secondary);
-      word-break: break-word;
+      margin-top: 12px;
     }
 
+    .status-banner-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--accent);
+    }
+
+    /* Security Alert List */
     .alert-log {
       list-style: none;
+      margin: 0;
       padding: 0;
-      margin: 8px 0 0;
     }
 
     .alert-log li {
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-      margin-bottom: 8px;
-      font-size: 0.85rem;
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    .alert-log li strong {
-      display: block;
+    .alert-log li + li {
+      border-top: 1px solid var(--row-border);
+    }
+
+    .alert-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .alert-badge.armed {
+      background-color: rgba(48, 209, 88, 0.15);
+      color: var(--armed-green);
+    }
+
+    .alert-badge.warning {
+      background-color: rgba(255, 159, 10, 0.15);
+      color: var(--warning-amber);
+    }
+
+    .alert-badge.alarm {
+      background-color: rgba(255, 69, 58, 0.18);
+      color: var(--alarm-red);
+    }
+
+    .alert-badge.info {
+      background-color: rgba(10, 132, 255, 0.15);
+      color: var(--accent);
+    }
+
+    .alert-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .alert-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
       margin-bottom: 2px;
+    }
+
+    .alert-title {
+      font-size: 0.88rem;
+      font-weight: 600;
       color: var(--text-primary);
+    }
+
+    .alert-time {
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .alert-body {
+      font-size: 0.80rem;
+      color: var(--text-secondary);
+      line-height: 1.35;
     }
 
     footer {
       text-align: center;
-      margin-top: 8px;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
+      margin-top: 18px;
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .sf-icon {
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
     }
 
     [hidden] {
@@ -272,57 +433,179 @@
   </style>
 </head>
 <body>
+  <!-- Native macOS / Apple SF Symbols Vector Sprite -->
+  <svg style="display: none;" aria-hidden="true">
+    <defs>
+      <!-- sf-shield -->
+      <g id="sf-shield">
+        <path fill-rule="evenodd" d="M12 2.25a.75.75 0 0 1 .34.08c3.2 1.6 6.8 2.3 8.4 2.5a.75.75 0 0 1 .66.75v5.5c0 6.2-4.1 10.4-8.8 11.85a.75.75 0 0 1-.4 0C7.5 21.48 3.4 17.28 3.4 11.08v-5.5a.75.75 0 0 1 .66-.75c1.6-.2 5.2-.9 8.4-2.5a.75.75 0 0 1 .34-.08z"/>
+      </g>
+      <!-- sf-lock -->
+      <g id="sf-lock">
+        <path fill-rule="evenodd" d="M12 2a4.5 4.5 0 0 0-4.5 4.5V9H6.5A2.5 2.5 0 0 0 4 11.5v8A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 9h-1V6.5A4.5 4.5 0 0 0 12 2zm-3 4.5a3 3 0 1 1 6 0V9H9V6.5zm3 7a1.5 1.5 0 0 0-1 2.62V18a1 1 0 1 0 2 0v-1.88A1.5 1.5 0 0 0 12 13.5z"/>
+      </g>
+      <!-- sf-lock-open -->
+      <g id="sf-lock-open">
+        <path fill-rule="evenodd" d="M12 2a4.5 4.5 0 0 0-4.5 4.5V8a.75.75 0 0 0 1.5 0V6.5a3 3 0 1 1 6 0V9H6.5A2.5 2.5 0 0 0 4 11.5v8A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 9H13.5V6.5A4.5 4.5 0 0 0 12 2zM12 13.5a1.5 1.5 0 0 0-1 2.62V18a1 1 0 1 0 2 0v-1.88A1.5 1.5 0 0 0 12 13.5z"/>
+      </g>
+      <!-- sf-triangle -->
+      <g id="sf-triangle">
+        <path fill-rule="evenodd" d="M10.74 3.46a1.45 1.45 0 0 1 2.52 0l8.7 15.06A1.45 1.45 0 0 1 20.7 20.7H3.3a1.45 1.45 0 0 1-1.26-2.18l8.7-15.06zM12 8a.75.75 0 0 0-.75.75v4.5a.75.75 0 0 0 1.5 0v-4.5A.75.75 0 0 0 12 8zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+      </g>
+      <!-- sf-bell -->
+      <g id="sf-bell">
+        <path d="M12 2a1.75 1.75 0 0 0-1.75 1.75v.55A7 7 0 0 0 4.5 11v3.38l-1.32 1.98A1.25 1.25 0 0 0 4.22 18h15.56a1.25 1.25 0 0 0 1.04-1.94L19.5 14.38V11a7 7 0 0 0-5.75-6.7V3.75A1.75 1.75 0 0 0 12 2zm-2.5 17a2.5 2.5 0 0 0 5 0h-5z"/>
+      </g>
+      <!-- sf-share -->
+      <g id="sf-share">
+        <path d="M12 2.5a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5A.75.75 0 0 1 12 2.5z"/>
+        <path d="M8.22 6.28a.75.75 0 0 1 1.06-1.06L12 7.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L8.22 6.28z"/>
+        <path d="M4 10.75A2.75 2.75 0 0 1 6.75 8h2a.75.75 0 0 1 0 1.5h-2A1.25 1.25 0 0 0 5.5 10.75v7.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-7.5c0-.69-.56-1.25-1.25-1.25h-2a.75.75 0 0 1 0-1.5h2A2.75 2.75 0 0 1 20 10.75v7.5A2.75 2.75 0 0 1 17.25 21H6.75A2.75 2.75 0 0 1 4 18.25v-7.5z"/>
+      </g>
+      <!-- sf-plus-app -->
+      <g id="sf-plus-app">
+        <path d="M5.5 3A2.5 2.5 0 0 0 3 5.5v13A2.5 2.5 0 0 0 5.5 21h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 3h-13zm0 1.5h13A1 1 0 0 1 19.5 5.5v13a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zm6.5 3a.75.75 0 0 0-.75.75v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3v-3A.75.75 0 0 0 12 7.5z"/>
+      </g>
+      <!-- sf-iphone -->
+      <g id="sf-iphone">
+        <path d="M7.5 2A2.5 2.5 0 0 0 5 4.5v15A2.5 2.5 0 0 0 7.5 22h9a2.5 2.5 0 0 0 2.5-2.5v-15A2.5 2.5 0 0 0 16.5 2h-9zm0 1.5h9c.55 0 1 .45 1 1v15c0 .55-.45 1-1 1h-9c-.55 0-1-.45-1-1v-15c0-.55.45-1 1-1zm3 15.5h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1 0-1.5z"/>
+      </g>
+      <!-- sf-clipboard -->
+      <g id="sf-clipboard">
+        <path d="M7.5 3A1.5 1.5 0 0 0 6 4.5v12A1.5 1.5 0 0 0 7.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 14.5 3h-7zm0 1.5h7a.5.5 0 0 1 .5.5v12a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-12a.5.5 0 0 1 .5-.5z"/>
+        <path d="M10 2a1 1 0 0 0-.96.73h3.92A1 1 0 0 0 10 2zm6.5 4.5a.75.75 0 0 1 .75.75v12.25a2 2 0 0 1-2 2H7.75a.75.75 0 0 1 0-1.5h7.5a.5.5 0 0 0 .5-.5V7.25a.75.75 0 0 1 .75-.75z"/>
+      </g>
+      <!-- sf-checkmark -->
+      <g id="sf-checkmark">
+        <path fill-rule="evenodd" d="M19.78 6.22a.75.75 0 0 1 0 1.06l-10 10a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 1.06-1.06L9.25 15.69l9.47-9.47a.75.75 0 0 1 1.06 0z"/>
+      </g>
+      <!-- sf-checkmark-circle -->
+      <g id="sf-checkmark-circle">
+        <path fill-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.53 7.53a.75.75 0 0 0-1.06-1.06L10.5 13.44l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5.5-5.5z"/>
+      </g>
+      <!-- sf-info -->
+      <g id="sf-info">
+        <path fill-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 5a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 12 7zm-1.25 4.5a.75.75 0 0 1 1.5 0v5a.75.75 0 0 1-1.5 0v-5z"/>
+      </g>
+    </defs>
+  </svg>
+
   <header>
-    <img src="./apple-touch-icon.png" alt="Pupil app icon" class="app-icon">
-    <h1>Pupil Companion</h1>
-    <p class="subtitle">One-time iPhone lock-screen push pairing for your MacBook security sentinel</p>
+    <div class="app-icon-wrap">
+      <img src="./apple-touch-icon.png" alt="Pupil app icon" class="app-icon">
+    </div>
+    <h1>Pupil</h1>
+    <p class="subtitle">Mobile Sentinel Companion</p>
+    
+    <div id="header-status-pill" class="header-status-pill pending">
+      <span class="status-dot"></span>
+      <svg class="sf-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+        <use id="header-status-icon" href="#sf-lock-open"/>
+      </svg>
+      <span id="header-status-label">Ready to Pair</span>
+    </div>
   </header>
 
   <main>
-    <div class="card" id="install-guide-card" hidden>
-      <h2>Step 1: Add to Home Screen</h2>
-      <p class="subtitle" style="margin-bottom: 10px;">
-        iOS requires adding Pupil to your Home Screen once to unlock native lock-screen push alerts:
-      </p>
-      <ol class="steps">
-        <li>Tap the <strong>Share</strong> icon in Safari's bottom bar.</li>
-        <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
-        <li>Open <strong>Pupil</strong> from your Home Screen — <strong>you do not need to scan the QR code again</strong>.</li>
-      </ol>
-    </div>
+    <!-- Step 1 Guide: Shown only when opened in regular Safari -->
+    <div id="install-guide-card" hidden>
+      <div class="section-title">HOME SCREEN SETUP</div>
+      <div class="settings-group">
+        <div class="group-row">
+          <div class="row-icon-wrap">
+            <svg class="sf-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <use href="#sf-share"/>
+            </svg>
+          </div>
+          <div class="row-text">
+            <div class="row-title">1. Tap Share in Safari</div>
+            <div class="row-desc">In the bottom toolbar of Safari on your iPhone.</div>
+          </div>
+        </div>
 
-    <div class="card">
-      <div id="connection-pill" class="status-pill pending">
-        <span id="connection-pill-text">Ready to Pair</span>
+        <div class="group-row">
+          <div class="row-icon-wrap">
+            <svg class="sf-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <use href="#sf-plus-app"/>
+            </svg>
+          </div>
+          <div class="row-text">
+            <div class="row-title">2. Add to Home Screen</div>
+            <div class="row-desc">Scroll down the share sheet and tap Add to Home Screen.</div>
+          </div>
+        </div>
+
+        <div class="group-row">
+          <div class="row-icon-wrap">
+            <svg class="sf-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <use href="#sf-iphone"/>
+            </svg>
+          </div>
+          <div class="row-text">
+            <div class="row-title">3. Open from Home Screen</div>
+            <div class="row-desc">No rescan required — pairing parameters persist automatically.</div>
+          </div>
+        </div>
       </div>
-      <h2 id="main-card-heading">Lock-Screen Push Alerts</h2>
-      <p class="subtitle" id="main-card-desc" style="margin-bottom: 16px;">
-        Tap once below to allow notifications and link this phone permanently to Pupil on your Mac.
-      </p>
-
-      <button type="button" id="pair-btn" class="primary">
-        <span>Pair &amp; Enable Lock-Screen Alerts</span>
-      </button>
-
-      <button type="button" id="copy-token-btn" class="secondary" hidden>
-        <span>Copy Pairing Code (Universal Clipboard)</span>
-      </button>
-
-      <button type="button" id="test-local-btn" class="secondary" hidden>
-        <span>Send Local Test Banner</span>
-      </button>
-
-      <div id="live-status" class="status-box" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="card" id="recent-alerts-card" hidden>
-      <h2>Recent Security Alerts</h2>
-      <ul class="alert-log" id="alert-log-list" role="list"></ul>
+    <!-- Main Alert Pairing Section -->
+    <div class="section-title">LOCK-SCREEN PUSH ALERTS</div>
+    <div class="settings-group">
+      <div class="group-card-body">
+        <div class="row-title">Direct Apple APNs Delivery</div>
+        <div class="row-desc">
+          Encrypted alerts wake your locked phone screen over Wi-Fi or cellular whenever your MacBook detects keyboard activity, physical displacement, or alarm triggers.
+        </div>
+
+        <div class="btn-stack">
+          <button type="button" id="pair-btn" class="primary">
+            <svg class="sf-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <use href="#sf-shield"/>
+            </svg>
+            <span id="pair-btn-text">Pair &amp; Enable Lock-Screen Alerts</span>
+          </button>
+
+          <div class="btn-row">
+            <button type="button" id="copy-token-btn" class="secondary" hidden>
+              <svg class="sf-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                <use href="#sf-clipboard"/>
+              </svg>
+              <span>Copy Code</span>
+            </button>
+
+            <button type="button" id="test-local-btn" class="secondary" hidden>
+              <svg class="sf-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                <use href="#sf-bell"/>
+              </svg>
+              <span>Test Alert</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="live-status" class="status-banner" role="status" aria-live="polite">
+          <svg class="sf-icon status-banner-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+            <use id="status-icon-symbol" href="#sf-info"/>
+          </svg>
+          <span id="live-status-text">Scan the QR code once in Pupil Settings on your Mac to pair.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Alerts Card -->
+    <div id="recent-alerts-card" hidden>
+      <div class="section-title">RECENT SECURITY ALERTS</div>
+      <div class="settings-group">
+        <ul class="alert-log" id="alert-log-list" role="list"></ul>
+      </div>
     </div>
   </main>
 
   <footer>
-    <p>End-to-end encrypted Web Push (RFC 8291 + VAPID) • Zero tracking</p>
+    <svg class="sf-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+      <use href="#sf-lock"/>
+    </svg>
+    <span>End-to-End Encrypted Web Push (RFC 8291 + VAPID) • Zero tracking</span>
   </footer>
 
   <script>
@@ -341,14 +624,7 @@
       const vapidPublicKey = urlVapid || localStorage.getItem(STORAGE_KEY_VAPID) || '';
       const pairingChannel = urlChannel || localStorage.getItem(STORAGE_KEY_CHANNEL) || '';
 
-      // Inject a dynamic manifest containing the exact current URL so "Add to Home Screen"
-      // always preserves ?v=...&c=... even across Safari's isolated WebApp storage!
       if (vapidPublicKey || pairingChannel) {
-        const startUrl = new URL(window.location.href);
-        if (vapidPublicKey) startUrl.searchParams.set('v', vapidPublicKey);
-        if (pairingChannel) startUrl.searchParams.set('c', pairingChannel);
-
-        // Also cache pairing params in CacheStorage + ServiceWorker URL so standalone mode can read them
         if ('caches' in window) {
           caches.open('pupil-pairing-v1').then((cache) => {
             cache.put(
@@ -362,13 +638,16 @@
       }
 
       const installGuideCard = document.getElementById('install-guide-card');
-      const connectionPill = document.getElementById('connection-pill');
-      const connectionPillText = document.getElementById('connection-pill-text');
-      const mainCardDesc = document.getElementById('main-card-desc');
+      const headerStatusPill = document.getElementById('header-status-pill');
+      const headerStatusIcon = document.getElementById('header-status-icon');
+      const headerStatusLabel = document.getElementById('header-status-label');
       const pairBtn = document.getElementById('pair-btn');
+      const pairBtnText = document.getElementById('pair-btn-text');
       const copyTokenBtn = document.getElementById('copy-token-btn');
       const testLocalBtn = document.getElementById('test-local-btn');
       const liveStatus = document.getElementById('live-status');
+      const liveStatusText = document.getElementById('live-status-text');
+      const statusIconSymbol = document.getElementById('status-icon-symbol');
       const recentAlertsCard = document.getElementById('recent-alerts-card');
       const alertLogList = document.getElementById('alert-log-list');
 
@@ -382,13 +661,19 @@
       }
 
       function setStatus(message, isPaired) {
-        liveStatus.textContent = message;
+        liveStatusText.textContent = message;
         if (isPaired) {
-          connectionPill.className = 'status-pill ready';
-          connectionPillText.textContent = 'Paired with Your Mac ✓';
-          mainCardDesc.textContent = 'Your phone is permanently linked. You can close this app and lock your screen—alerts will wake your lock screen automatically.';
-          pairBtn.querySelector('span').textContent = 'Re-Sync Pairing with Mac';
+          headerStatusPill.className = 'header-status-pill ready';
+          headerStatusIcon.setAttribute('href', '#sf-lock');
+          headerStatusLabel.textContent = 'Paired with Mac';
+          statusIconSymbol.setAttribute('href', '#sf-checkmark-circle');
+          pairBtnText.textContent = 'Re-Sync Pairing with Mac';
           testLocalBtn.hidden = false;
+        } else {
+          headerStatusPill.className = 'header-status-pill pending';
+          headerStatusIcon.setAttribute('href', '#sf-lock-open');
+          headerStatusLabel.textContent = 'Ready to Pair';
+          statusIconSymbol.setAttribute('href', '#sf-info');
         }
       }
 
@@ -430,24 +715,24 @@
       let latestPairingToken = localStorage.getItem(STORAGE_KEY_PAIRED_TOKEN) || '';
       if (latestPairingToken) {
         copyTokenBtn.hidden = false;
-        setStatus('Paired and active. Lock-screen notifications are enabled.', true);
+        setStatus('Paired and active. Lock-screen alerts will wake your iPhone.', true);
       }
 
       async function pairAndSubscribe() {
         try {
           if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
             if (isIOS && !isStandalone) {
-              setStatus('Please add this page to your iPhone Home Screen first (Step 1 above), then open Pupil from your Home Screen.', false);
+              setStatus('Please add Pupil to your Home Screen first (see steps above), then open from your Home Screen.', false);
               return;
             }
-            setStatus('Web Push is not supported in this browser mode.', false);
+            setStatus('Web Push is not available in this browser window.', false);
             return;
           }
 
           setStatus('Requesting notification permission…', false);
           const { v, c } = await loadConfigFromCacheIfNeeded();
           if (!v) {
-            setStatus('Missing Mac pairing key. Please scan the QR code in Pupil Settings on your Mac once.', false);
+            setStatus('Missing Mac pairing key. Scan the QR code in Pupil Settings on your Mac once.', false);
             return;
           }
 
@@ -456,7 +741,7 @@
 
           const permission = await Notification.requestPermission();
           if (permission !== 'granted') {
-            setStatus('Notification permission was not granted. Please enable Notifications for Pupil in iOS Settings.', false);
+            setStatus('Notification permission not granted. Enable Notifications for Pupil in iOS Settings.', false);
             return;
           }
 
@@ -491,7 +776,6 @@
             await navigator.clipboard.writeText(encodedToken);
           } catch {}
 
-          // Automatically beam subscription to Mac via one-time rendezvous channel
           let autoSynced = false;
           if (c) {
             try {
@@ -507,7 +791,7 @@
           if (autoSynced) {
             setStatus('Paired automatically with your Mac! You can lock your phone now.', true);
           } else {
-            setStatus('Push endpoint created and copied to clipboard! Click "Paste Pairing Code" in Pupil Settings on your Mac if it did not auto-complete.', true);
+            setStatus('Pairing code copied to clipboard! Click "Paste Pairing Code" in Pupil Settings on your Mac.', true);
           }
         } catch (err) {
           setStatus('Pairing error: ' + (err && err.message ? err.message : String(err)), false);
@@ -520,7 +804,7 @@
         if (!latestPairingToken) return;
         try {
           await navigator.clipboard.writeText(latestPairingToken);
-          setStatus('Pairing code copied! With Universal Clipboard, click "Paste Pairing Code" in Pupil Settings on your Mac.', true);
+          setStatus('Pairing code copied to Universal Clipboard.', true);
         } catch {
           setStatus('Pairing code: ' + latestPairingToken, true);
         }
@@ -529,7 +813,7 @@
       testLocalBtn.addEventListener('click', async () => {
         if (!('serviceWorker' in navigator)) return;
         const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification('🚨 Pupil Test Alert', {
+        await reg.showNotification('Pupil Test Alert', {
           body: 'Lock-screen notifications are active for your MacBook.',
           icon: './icon-192.png',
           badge: './icon-192.png',
@@ -537,20 +821,49 @@
         });
       });
 
+      function addAlertToLog(p) {
+        recentAlertsCard.hidden = false;
+        const li = document.createElement('li');
+
+        let badgeType = 'info';
+        let iconSymbol = '#sf-bell';
+
+        if (p.severity === 'critical') {
+          badgeType = 'alarm';
+          iconSymbol = '#sf-bell';
+        } else if (p.tag === 'pupil-tamper') {
+          badgeType = 'warning';
+          iconSymbol = '#sf-triangle';
+        } else if (p.tag === 'pupil-input-lock') {
+          badgeType = 'armed';
+          iconSymbol = '#sf-shield';
+        }
+
+        const date = new Date(p.timestamp || Date.now());
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        li.innerHTML = `
+          <div class="alert-badge ${badgeType}">
+            <svg class="sf-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <use href="${iconSymbol}"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <div class="alert-title-row">
+              <span class="alert-title">${p.title || 'Pupil Security Alert'}</span>
+              <span class="alert-time">${timeStr}</span>
+            </div>
+            <div class="alert-body">${p.body || ''}</div>
+          </div>
+        `;
+        alertLogList.prepend(li);
+      }
+
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
         navigator.serviceWorker.addEventListener('message', (event) => {
           if (event.data && event.data.type === 'PUPIL_PUSH_RECEIVED') {
-            const p = event.data.payload;
-            recentAlertsCard.hidden = false;
-            const li = document.createElement('li');
-            const titleEl = document.createElement('strong');
-            titleEl.textContent = p.title;
-            const bodyEl = document.createElement('span');
-            bodyEl.textContent = p.body;
-            li.appendChild(titleEl);
-            li.appendChild(bodyEl);
-            alertLogList.prepend(li);
+            addAlertToLog(event.data.payload);
           }
         });
       }

@@ -492,7 +492,7 @@
       "file_path": "Sources/Pupil/Core/SecurityCoordinator.swift",
       "module_category": "Core Security State Machine",
       "line_count": 744,
-      "content_hash": "ef07a7f75df3df42",
+      "content_hash": "8e9dfe9027a42933",
       "symbols": [
         "SecurityState",
         "TamperSource",
@@ -1752,7 +1752,7 @@
       "file_path": "Sources/Pupil/Settings/Pages/SensorsSettingsPage.swift",
       "module_category": "Hardware Sensors & Relay Settings Page",
       "line_count": 272,
-      "content_hash": "88e502ade2ba7f99",
+      "content_hash": "55b4d8ff7fd67a9d",
       "symbols": [
         "SensorsSettingsPage",
         "toggleTrigger",
@@ -1866,7 +1866,7 @@
       "file_path": "Tests/PupilTests/PupilSecurityTests.swift",
       "module_category": "Deterministic Security Test Suite",
       "line_count": 528,
-      "content_hash": "35997d9fe7102046",
+      "content_hash": "a4af24af909ca105",
       "symbols": [
         "PupilSecurityTests",
         "testPinEnrollmentAndVerification",

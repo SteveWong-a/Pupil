@@ -471,7 +471,7 @@ struct PupilSecurityTests {
         let authSecret = Data((0 ..< 16).map { UInt8($0 + 1) })
         let authB64 = authSecret.base64URLEncodedString()
 
-        let samplePlaintext = Data(#"{"title":"🚨 Pupil Alarm","body":"Charger unplugged!"}"#.utf8)
+        let samplePlaintext = Data(#"{"title":"Pupil Alarm","body":"Charger unplugged!"}"#.utf8)
         let encrypted = try WebPushManager.encryptWebPushPayload(
             samplePlaintext,
             p256dhBase64URL: receiverP256dh,

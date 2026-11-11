@@ -144,7 +144,7 @@ public struct SensorsSettingsPage: View {
                                             settings.relayEnabled = true
                                         }
                                         _ = await coordinator.webPushManager.sendPushNotification(
-                                            title: "🚨 Pupil Test Alert",
+                                            title: "Pupil Test Alert",
                                             body: "Your locked phone is receiving direct security alerts from your MacBook.",
                                             severity: "high",
                                             tag: "pupil-test"
